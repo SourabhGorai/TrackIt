@@ -6,6 +6,8 @@ import com.trackIt.user_service.mapper.UserMapper;
 import com.trackIt.user_service.model.AuthProvider;
 import com.trackIt.user_service.model.Users;
 import com.trackIt.user_service.repository.UserRepository;
+import com.trackIt.user_service.service.ExternalServiceClient;
+import com.trackIt.user_service.service.JwtService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -188,20 +190,95 @@ public class AuthService {
     }
 
     /**
-     * OAuth2 login/registration
+     * Google OAuth2 login
+     */
+    // Replace these methods in your AuthService.java
+
+    /**
+     * Google OAuth2 login
      */
     @Transactional
-    public AuthResponse oauth2Login(OAuth2UserInfo oauth2User, Long roleId, Long companyId) {
-        log.info("OAuth2 login attempt for email: {} via {}", oauth2User.getEmail(), oauth2User.getProvider());
+    public AuthResponse googleLogin(OAuth2LoginRequest request) {
+        log.info("Processing Google login");
 
-        Users user = userRepository.findByEmail(oauth2User.getEmail())
-                .orElse(null);
+        try {
+            // Decode Google ID token
+            OAuth2UserInfo userInfo = decodeGoogleIdToken(request.getIdToken());
+            return processOAuth2Login(userInfo, request.getRoleId(), request.getCompanyId());
+        } catch (IllegalArgumentException e) {
+            // Re-throw IllegalArgumentException (for missing role/company)
+            log.error("Google login failed: {}", e.getMessage());
+            throw e;
+        } catch (InvalidTokenException e) {
+            // Re-throw InvalidTokenException (for invalid token)
+            log.error("Google login failed: {}", e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            // Catch any other exceptions
+            log.error("Google login failed: {}", e.getMessage());
+            throw new InvalidTokenException("Invalid Google ID token");
+        }
+    }
+
+    /**
+     * Facebook OAuth2 login
+     */
+    @Transactional
+    public AuthResponse facebookLogin(OAuth2LoginRequest request) {
+        log.info("Processing Facebook login");
+
+        try {
+            OAuth2UserInfo userInfo = decodeFacebookToken(request.getIdToken());
+            return processOAuth2Login(userInfo, request.getRoleId(), request.getCompanyId());
+        } catch (IllegalArgumentException e) {
+            log.error("Facebook login failed: {}", e.getMessage());
+            throw e;
+        } catch (InvalidTokenException e) {
+            log.error("Facebook login failed: {}", e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            log.error("Facebook login failed: {}", e.getMessage());
+            throw new InvalidTokenException("Invalid Facebook access token");
+        }
+    }
+
+    /**
+     * GitHub OAuth2 login
+     */
+    @Transactional
+    public AuthResponse githubLogin(OAuth2LoginRequest request) {
+        log.info("Processing GitHub login");
+
+        try {
+            OAuth2UserInfo userInfo = decodeGithubToken(request.getIdToken());
+            return processOAuth2Login(userInfo, request.getRoleId(), request.getCompanyId());
+        } catch (IllegalArgumentException e) {
+            log.error("GitHub login failed: {}", e.getMessage());
+            throw e;
+        } catch (InvalidTokenException e) {
+            log.error("GitHub login failed: {}", e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            log.error("GitHub login failed: {}", e.getMessage());
+            throw new InvalidTokenException("Invalid GitHub access token");
+        }
+    }
+
+    /**
+     * Process OAuth2 login (common logic)
+     */
+    private AuthResponse processOAuth2Login(OAuth2UserInfo oauth2User, Long roleId, Long companyId) {
+        log.info("OAuth2 login for email: {} via {}", oauth2User.getEmail(), oauth2User.getProvider());
+
+        Users user = userRepository.findByEmail(oauth2User.getEmail()).orElse(null);
 
         if (user == null) {
-            // Register new OAuth2 user
-            log.info("Creating new OAuth2 user for: {}", oauth2User.getEmail());
+            // New user - require roleId and companyId
+            if (roleId == null || companyId == null) {
+                throw new IllegalArgumentException("Role ID and Company ID are required for new users");
+            }
 
-            // Verify role and company
+            // Verify role and company exist
             externalServiceClient.verifyRoleExists(roleId);
             externalServiceClient.verifyCompanyExists(companyId);
 
@@ -212,19 +289,20 @@ public class AuthService {
                     .employeeId(employeeId)
                     .name(oauth2User.getName())
                     .email(oauth2User.getEmail())
-                    .password(null) // No password for OAuth users
+                    .password(null)
                     .roleId(roleId)
                     .companyId(companyId)
                     .provider(AuthProvider.valueOf(oauth2User.getProvider().toUpperCase()))
                     .providerId(oauth2User.getProviderId())
                     .isAccountLocked(false)
                     .isDeleted(false)
-                    .isEmailVerified(true) // OAuth emails are pre-verified
+                    .isEmailVerified(true)
                     .build();
 
             userRepository.save(user);
+            log.info("New OAuth2 user created: {}", oauth2User.getEmail());
         } else {
-            // Check existing user
+            // Existing user
             if (user.getIsAccountLocked()) {
                 throw new AccountLockedException("Your account has been locked. Please contact support.");
             }
@@ -232,13 +310,13 @@ public class AuthService {
             if (user.getIsDeleted()) {
                 throw new UserNotFoundException("Account has been deactivated");
             }
+
+            log.info("Existing user logged in: {}", oauth2User.getEmail());
         }
 
         // Generate tokens
         String accessToken = jwtService.generateAccessToken(user);
         String refreshToken = jwtService.generateRefreshToken(user);
-
-        log.info("OAuth2 login successful for: {}", oauth2User.getEmail());
 
         return AuthResponse.builder()
                 .accessToken(accessToken)
@@ -246,6 +324,55 @@ public class AuthService {
                 .tokenType("Bearer")
                 .user(UserMapper.toResponse(user))
                 .build();
+    }
+
+    /**
+     * Decode Google ID Token (simplified - use google-api-client library in production)
+     */
+    private OAuth2UserInfo decodeGoogleIdToken(String idToken) {
+        try {
+            // Split JWT token
+            String[] parts = idToken.split("\\.");
+            if (parts.length != 3) {
+                throw new InvalidTokenException("Invalid token format");
+            }
+
+            // Decode payload (base64)
+            String payload = new String(java.util.Base64.getUrlDecoder().decode(parts[1]));
+
+            // Parse JSON (using simple approach - use Jackson ObjectMapper in production)
+            com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+            com.fasterxml.jackson.databind.JsonNode node = mapper.readTree(payload);
+
+            return OAuth2UserInfo.builder()
+                    .email(node.get("email").asText())
+                    .name(node.get("name").asText())
+                    .provider("GOOGLE")
+                    .providerId(node.get("sub").asText())
+//                    .picture(node.has("picture") ? node.get("picture").asText() : null)
+                    .build();
+        } catch (Exception e) {
+            log.error("Failed to decode Google ID token: {}", e.getMessage());
+            throw new InvalidTokenException("Invalid Google ID token");
+        }
+    }
+
+    /**
+     * Decode Facebook Token (simplified)
+     */
+    private OAuth2UserInfo decodeFacebookToken(String accessToken) {
+        // In production, verify token with Facebook Graph API
+        // For now, return placeholder
+        throw new UnsupportedOperationException("Facebook login not fully implemented yet");
+    }
+
+    /**
+     * Decode GitHub Token (simplified)
+     */
+    private OAuth2UserInfo decodeGithubToken(String accessToken) {
+        // In production, verify token with GitHub API
+        // For now, return placeholder
+        throw new UnsupportedOperationException("GitHub login not fully implemented yet");
     }
 
     /**
@@ -261,5 +388,57 @@ public class AuthService {
         }
 
         return employeeId;
+    }
+
+    // Add this method to your AuthService class
+
+    /**
+     * Complete OAuth2 registration for new users
+     * This is called when a new user needs to select role and company after OAuth2 login
+     */
+    @Transactional
+    public AuthResponse completeOAuth2Registration(OAuth2CompleteRegistrationRequest request) {
+        log.info("Completing OAuth2 registration for: {}", request.getEmail());
+
+        // Check if user already exists
+        if (userRepository.existsByEmail(request.getEmail())) {
+            throw new UserAlreadyExistsException("User with this email already exists");
+        }
+
+        // Verify role and company exist
+        externalServiceClient.verifyRoleExists(request.getRoleId());
+        externalServiceClient.verifyCompanyExists(request.getCompanyId());
+
+        // Generate unique employeeId
+        String employeeId = generateEmployeeId(request.getEmail());
+
+        // Create new OAuth2 user
+        Users user = Users.builder()
+                .employeeId(employeeId)
+                .name(request.getName())
+                .email(request.getEmail())
+                .password(null) // No password for OAuth users
+                .roleId(request.getRoleId())
+                .companyId(request.getCompanyId())
+                .provider(AuthProvider.valueOf(request.getProvider().toUpperCase()))
+                .providerId(request.getProviderId())
+                .isAccountLocked(false)
+                .isDeleted(false)
+                .isEmailVerified(true) // OAuth emails are pre-verified
+                .build();
+
+        userRepository.save(user);
+        log.info("New OAuth2 user created: {}", request.getEmail());
+
+        // Generate tokens
+        String accessToken = jwtService.generateAccessToken(user);
+        String refreshToken = jwtService.generateRefreshToken(user);
+
+        return AuthResponse.builder()
+                .accessToken(accessToken)
+                .refreshToken(refreshToken)
+                .tokenType("Bearer")
+                .user(UserMapper.toResponse(user))
+                .build();
     }
 }

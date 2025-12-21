@@ -2,101 +2,501 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Auth Demo</title>
-
-    <!-- Google Identity Services -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TrackIT - Login</title>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
-
     <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         body {
-            font-family: Arial, sans-serif;
-            background: #f5f5f5;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
             display: flex;
-            justify-content: center;
             align-items: center;
-            height: 100vh;
+            justify-content: center;
+            padding: 20px;
         }
-        .card {
+
+        .login-container {
             background: white;
-            padding: 25px;
-            width: 320px;
-            border-radius: 8px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
-            text-align: center;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 400px;
+            width: 100%;
         }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 28px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 500;
+        }
+
         input {
             width: 100%;
-            padding: 8px;
-            margin: 8px 0;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
         }
-        button {
+
+        input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .btn {
             width: 100%;
-            padding: 10px;
-            background: #1976d2;
+            padding: 14px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
             cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .divider {
+            text-align: center;
+            margin: 30px 0;
+            position: relative;
+        }
+
+        .divider::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 50%;
+            width: 100%;
+            height: 1px;
+            background: #e0e0e0;
+        }
+
+        .divider span {
+            background: white;
+            padding: 0 15px;
+            position: relative;
+            color: #999;
+            font-size: 14px;
+        }
+
+        .google-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            width: 100%;
+            padding: 12px;
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 15px;
+        }
+
+        .google-btn:hover {
+            background: #f8f9fa;
+            border-color: #667eea;
+        }
+
+        .message {
+            margin-top: 20px;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 14px;
+            display: none;
+        }
+
+        .message.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .message.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .role-company-section {
+            display: none;
+            margin-bottom: 20px;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        #google-signin-btn {
             margin-top: 10px;
         }
     </style>
 </head>
-
 <body>
+    <div class="login-container">
+        <h1>🚀 TrackIT Login</h1>
 
-<div class="card">
-    <h2>Login / Register</h2>
+        <!-- Regular Login Form -->
+        <form id="loginForm">
+            <div class="form-group">
+                <label for="employeeId">Employee ID</label>
+                <input type="text" id="employeeId" placeholder="Enter your employee ID" required>
+            </div>
 
-    <!-- Normal Login -->
-    <input type="email" id="email" placeholder="Email">
-    <input type="password" id="password" placeholder="Password">
-    <button onclick="login()">Login</button>
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" placeholder="Enter your password" required>
+            </div>
 
-    <hr>
+            <button type="submit" class="btn">Login</button>
+        </form>
 
-    <!-- Google Login -->
-    <div id="g_id_onload"
-         data-client_id="YOUR_GOOGLE_CLIENT_ID"
-         data-callback="handleGoogleLogin">
+        <div class="divider">
+            <span>OR</span>
+        </div>
+
+        <!-- Google Sign-In Button -->
+        <div id="google-signin-btn"></div>
+
+        <!-- Role and Company Selection (for new OAuth users) -->
+        <div class="role-company-section" id="roleCompanySection">
+            <div class="form-group">
+                <label for="roleId">Role</label>
+                <select id="roleId" required>
+                    <option value="">Select Role</option>
+                    <option value="1">Admin</option>
+                    <option value="2">Manager</option>
+                    <option value="4">Reporter</option>
+                    <option value="5">Support Engineer</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="companyId">Company</label>
+                <select id="companyId" required>
+                    <option value="">Select Company</option>
+                    <option value="1">Company A</option>
+                    <option value="2">Company B</option>
+                </select>
+            </div>
+
+            <button class="btn" onclick="completeOAuthRegistration()">Complete Registration</button>
+        </div>
+
+        <div id="message" class="message"></div>
     </div>
 
-    <div class="g_id_signin"
-         data-type="standard"
-         data-size="large"
-         data-theme="outline"
-         data-text="sign_in_with"
-         data-shape="rectangular">
-    </div>
-</div>
+    <script>
+        const API_BASE_URL = 'http://localhost:8081/api/auth';
+        let pendingOAuthToken = null;
 
-<script>
-    function login() {
-        alert("Normal login API call here");
-    }
+        // Initialize Google Sign-In
+        function initGoogleSignIn() {
+            google.accounts.id.initialize({
+                client_id: '475476457196-lgdsl3qh0s4i0o0qa62vap89jtja2g8f.apps.googleusercontent.com',
+                callback: handleGoogleCallback
+            });
 
-    // Google login callback
-    function handleGoogleLogin(response) {
-        console.log("Google ID Token:", response.credential);
+            google.accounts.id.renderButton(
+                document.getElementById('google-signin-btn'),
+                {
+                    theme: 'outline',
+                    size: 'large',
+                    text: 'continue_with',
+                    width: '100%'
+                }
+            );
+        }
 
-        fetch("http://localhost:8081/api/auth/google", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                idToken: response.credential
-            })
-        })
-        .then(res => res.json())
-        .then(data => {
-            console.log("Backend response:", data);
-            alert("Login successful!");
-        })
-        .catch(err => {
-            console.error(err);
-            alert("Login failed");
+        // Handle Google Sign-In callback
+        async function handleGoogleCallback(response) {
+            console.log('Google ID Token:', response.credential);
+            
+            try {
+                // Try to login with just the token (existing users)
+                const result = await loginWithGoogle(response.credential, null, null);
+                
+                if (result.success) {
+                    showMessage('Login successful! Redirecting...', 'success');
+                    
+                    // Store tokens
+                    localStorage.setItem('accessToken', result.data.accessToken);
+                    localStorage.setItem('refreshToken', result.data.refreshToken);
+                    localStorage.setItem('user', JSON.stringify(result.data.user));
+                    
+                    // Redirect to dashboard
+                    setTimeout(() => {
+                        window.location.href = '/dashboard.html';
+                    }, 1500);
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                
+                // Check if it's a new user requiring role and company
+                if (error.errorCode === 'INVALID_ARGUMENT' || 
+                    error.message.includes('Role ID and Company ID are required')) {
+                    showMessage('Welcome! Please select your role and company to complete registration', 'error');
+                    pendingOAuthToken = response.credential;
+                    document.getElementById('roleCompanySection').style.display = 'block';
+                } else {
+                    showMessage(error.message || 'Login failed. Please try again.', 'error');
+                }
+            }
+        }
+
+        // Complete OAuth registration with role and company
+        async function completeOAuthRegistration() {
+            const roleId = document.getElementById('roleId').value;
+            const companyId = document.getElementById('companyId').value;
+
+            if (!roleId || !companyId) {
+                showMessage('Please select both role and company', 'error');
+                return;
+            }
+
+            try {
+                const result = await loginWithGoogle(pendingOAuthToken, roleId, companyId);
+                
+                if (result.success) {
+                    showMessage('Registration successful! Redirecting...', 'success');
+                    
+                    // Store tokens
+                    localStorage.setItem('accessToken', result.data.accessToken);
+                    localStorage.setItem('refreshToken', result.data.refreshToken);
+                    localStorage.setItem('user', JSON.stringify(result.data.user));
+                    
+                    // Redirect to dashboard
+                    setTimeout(() => {
+                        window.location.href = '/dashboard.html';
+                    }, 1500);
+                }
+            } catch (error) {
+                showMessage(error.message, 'error');
+            }
+        }
+
+        // Login with Google
+        async function loginWithGoogle(idToken, roleId, companyId) {
+            const payload = {
+                idToken: idToken
+            };
+
+            if (roleId) payload.roleId = parseInt(roleId);
+            if (companyId) payload.companyId = parseInt(companyId);
+
+            const response = await fetch(`${API_BASE_URL}/oauth2/google`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(payload)
+            });
+
+            const data = await response.json();
+            console.log('Backend response:', data);
+
+            if (!response.ok || !data.success) {
+                // Create error object with both message and errorCode
+                const error = new Error(data.message || 'Google login failed');
+                error.errorCode = data.errorCode;
+                throw error;
+            }
+
+            return data;
+        }
+
+        // Regular login
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const employeeId = document.getElementById('employeeId').value;
+            const password = document.getElementById('password').value;
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ employeeId, password })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showMessage('Login successful! Redirecting...', 'success');
+                    
+                    // Store tokens
+                    localStorage.setItem('accessToken', data.data.accessToken);
+                    localStorage.setItem('refreshToken', data.data.refreshToken);
+                    localStorage.setItem('user', JSON.stringify(data.data.user));
+                    
+                    // Redirect to dashboard
+                    setTimeout(() => {
+                        window.location.href = '/dashboard.html';
+                    }, 1500);
+                } else {
+                    showMessage(data.message, 'error');
+                }
+            } catch (error) {
+                showMessage('Login failed. Please try again.', 'error');
+            }
         });
-    }
-</script>
 
+        // Show message
+        function showMessage(text, type) {
+            const messageEl = document.getElementById('message');
+            messageEl.textContent = text;
+            messageEl.className = `message ${type}`;
+            messageEl.style.display = 'block';
+
+            if (type === 'success') {
+                setTimeout(() => {
+                    messageEl.style.display = 'none';
+                }, 3000);
+            }
+        }
+
+        // Initialize Google Sign-In when page loads
+        window.onload = initGoogleSignIn;
+    </script>
 </body>
 </html>
+
+
+<!-- <!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Auth Demo</title>
+
+    
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        background: #f5f5f5;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+      }
+      .card {
+        background: white;
+        padding: 25px;
+        width: 320px;
+        border-radius: 8px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        text-align: center;
+      }
+      input {
+        width: 100%;
+        padding: 8px;
+        margin: 8px 0;
+      }
+      button {
+        width: 100%;
+        padding: 10px;
+        background: #1976d2;
+        color: white;
+        border: none;
+        cursor: pointer;
+        margin-top: 10px;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="card">
+      <h2>Login / Register</h2>
+
+      
+      <input type="email" id="email" placeholder="Email" />
+      <input type="password" id="password" placeholder="Password" />
+      <button onclick="login()">Login</button>
+
+      <hr />
+
+      
+
+      
+      <div
+        id="g_id_onload"
+        data-client_id="475476457196-lgdsl3qh0s4i0o0qa62vap89jtja2g8f.apps.googleusercontent.com"
+        data-callback="handleGoogleLogin"
+      ></div>
+
+      <div
+        class="g_id_signin"
+        data-type="standard"
+        data-size="large"
+        data-theme="outline"
+        data-text="sign_in_with"
+        data-shape="rectangular"
+      ></div>
+    </div>
+
+    <script>
+      function login() {
+        alert("Normal login API call here");
+      }
+
+     
+      function handleGoogleLogin(response) {
+        console.log("Google ID Token:", response.credential);
+
+        fetch("http://localhost:8081/api/auth/oauth2/google", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            idToken: response.credential,
+          }),
+        })
+          .then((res) => res.json())
+          .then((data) => {
+            console.log("Backend response:", data);
+            alert("Login successful!");
+          })
+          .catch((err) => {
+            console.error(err);
+            alert("Login failed");
+          });
+      }
+    </script>
+  </body>
+</html> -->

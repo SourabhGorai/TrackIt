@@ -75,19 +75,51 @@ public class AuthController {
     }
 
     /**
-     * OAuth2 callback endpoint (simplified - actual implementation depends on OAuth provider)
+     * OAuth2 Google login with ID token
      */
-    @PostMapping("/oauth2/{provider}")
-    public ResponseEntity<ApiResponse<AuthResponse>> oauth2Login(
-            @PathVariable String provider,
-            @Valid @RequestBody OAuth2UserInfo oauth2User,
-            @RequestParam Long roleId,
-            @RequestParam Long companyId) {
+    @PostMapping("/oauth2/google")
+    public ResponseEntity<ApiResponse<AuthResponse>> googleLogin(
+            @Valid @RequestBody OAuth2LoginRequest request) {
 
-        log.info("OAuth2 login request via: {}", provider);
-        oauth2User.setProvider(provider);
+        log.info("Google OAuth2 login request received");
+        AuthResponse response = authService.googleLogin(request);
+        return ResponseEntity.ok(ApiResponse.success("Google login successful", response));
+    }
 
-        AuthResponse response = authService.oauth2Login(oauth2User, roleId, companyId);
-        return ResponseEntity.ok(ApiResponse.success("OAuth2 login successful", response));
+    /**
+     * Complete OAuth2 registration for new users
+     * Used when a new user logs in via OAuth2 and needs to select role/company
+     */
+    @PostMapping("/oauth2/complete-registration")
+    public ResponseEntity<ApiResponse<AuthResponse>> completeOAuth2Registration(
+            @Valid @RequestBody OAuth2CompleteRegistrationRequest request) {
+
+        log.info("OAuth2 registration completion request for: {}", request.getEmail());
+        AuthResponse response = authService.completeOAuth2Registration(request);
+        return ResponseEntity.ok(ApiResponse.success("Registration completed successfully", response));
+    }
+
+    /**
+     * OAuth2 Facebook login
+     */
+    @PostMapping("/oauth2/facebook")
+    public ResponseEntity<ApiResponse<AuthResponse>> facebookLogin(
+            @Valid @RequestBody OAuth2LoginRequest request) {
+
+        log.info("Facebook OAuth2 login request received");
+        AuthResponse response = authService.facebookLogin(request);
+        return ResponseEntity.ok(ApiResponse.success("Facebook login successful", response));
+    }
+
+    /**
+     * OAuth2 GitHub login
+     */
+    @PostMapping("/oauth2/github")
+    public ResponseEntity<ApiResponse<AuthResponse>> githubLogin(
+            @Valid @RequestBody OAuth2LoginRequest request) {
+
+        log.info("GitHub OAuth2 login request received");
+        AuthResponse response = authService.githubLogin(request);
+        return ResponseEntity.ok(ApiResponse.success("GitHub login successful", response));
     }
 }

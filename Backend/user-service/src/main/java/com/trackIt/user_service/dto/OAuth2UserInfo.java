@@ -17,4 +17,5 @@ public class OAuth2UserInfo {
     private String name;
     private String provider; // GOOGLE, FACEBOOK, GITHUB
     private String providerId;
+//    private String picture;
 }
