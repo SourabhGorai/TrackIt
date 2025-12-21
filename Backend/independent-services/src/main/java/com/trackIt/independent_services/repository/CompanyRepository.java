@@ -24,4 +24,12 @@ public interface CompanyRepository extends JpaRepository<Companies, Long> {
     List<Companies> findByIsDeletedTrue();
 
     Optional<Companies> findByCompanyName(String sanitizedName);
+
+    List<Companies> findByCompanyType(String companyType);
+
+    // Find active company by ID
+    Optional<Companies> findByCompanyIdAndIsDeletedFalse(Long companyId);
+
+    // Check if company exists and is active
+    boolean existsByCompanyIdAndIsDeletedFalse(Long companyId);
 }

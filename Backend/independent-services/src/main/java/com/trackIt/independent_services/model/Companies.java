@@ -18,6 +18,7 @@ public class Companies {
     @Column(nullable = false, unique = true)
     private String companyName;
 
+
     @Column(nullable = false)
     private String companyType;
 
