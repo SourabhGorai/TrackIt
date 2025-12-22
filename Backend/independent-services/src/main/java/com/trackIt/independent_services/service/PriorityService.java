@@ -1,6 +1,7 @@
 package com.trackIt.independent_services.service;
 
 import com.trackIt.independent_services.exception.AlreadyExistsException;
+import com.trackIt.independent_services.exception.NotFoundException;
 import com.trackIt.independent_services.exception.ServiceException;
 import com.trackIt.independent_services.mapper.PriorityMapper;
 import com.trackIt.independent_services.model.Priorities;
@@ -66,6 +67,17 @@ public class PriorityService {
         } catch (Exception e) {
             log.info("Failed to delete priority with id: {}", id);
             throw new ServiceException("Failed to delete priority: "+id, e);
+        }
+    }
+
+    @Transactional
+    public Priorities getById(Long id) {
+        log.info("Attempting to fetch priority with ID: {}", id);
+        try{
+            return priorityRepository.findById(id).orElseThrow();
+        } catch (Exception e) {
+            log.info("Failed to get priority with id: {}", id);
+            throw new ServiceException("Failed to get priority: "+id, e);
         }
     }
 }

@@ -205,4 +205,87 @@ public class ServicesService {
         log.info("Successfully fetched {} services", list.size());
         return ServiceMapper.toResponseList(list);
     }
+
+    public boolean validateService(Long id) {
+        try{
+            return servicesRepository.existsById(id);
+        }catch(Exception e){
+            log.info("Service not exists with ID: ", id);
+            throw new NotFoundException("Services", id.toString());
+        }
+    }
+
+    @Transactional
+    @CacheEvict(
+            value = {
+                    "services",
+                    "servicesPublic",
+                    "servicesById",
+                    "servicesByClient",
+                    "servicesByProvider",
+                    "servicesByName"
+            },
+            allEntries = true
+    )
+    public ServicesResponse updateService(Long serviceId, ServicesRequest request) {
+
+        log.info("Attempting to update service with ID: {}", serviceId);
+
+        Services service = servicesRepository.findById(serviceId)
+                .orElseThrow(() -> new NotFoundException("Services", serviceId.toString()));
+
+        // Fetch & validate client company
+        Companies clientCompany = companyRepository.findById(request.getClientCompanyId())
+                .orElseThrow(() -> new NotFoundException(
+                        "Client Company", request.getClientCompanyId().toString()
+                ));
+
+        if (!"CLIENT".equals(clientCompany.getCompanyType())) {
+            throw new ServiceException("Provided client company is not of type CLIENT");
+        }
+
+        // Fetch & validate provider company
+        Companies providerCompany = companyRepository.findById(request.getProviderCompanyId())
+                .orElseThrow(() -> new NotFoundException(
+                        "Provider Company", request.getProviderCompanyId().toString()
+                ));
+
+        if (!"PROVIDER".equals(providerCompany.getCompanyType())) {
+            throw new ServiceException("Provided provider company is not of type PROVIDER");
+        }
+
+        String serviceName = ServiceMapper.sanitizeName(request.getServiceName());
+
+        // Prevent duplicate service for same client-provider pair
+        boolean exists = servicesRepository
+                .existsByServiceNameAndClientCompany_CompanyIdAndProviderCompany_CompanyId(
+                        serviceName,
+                        clientCompany.getCompanyId(),
+                        providerCompany.getCompanyId()
+                );
+
+        if (exists &&
+                !(service.getServiceName().equals(serviceName)
+                        && service.getClientCompany().getCompanyId().equals(clientCompany.getCompanyId())
+                        && service.getProviderCompany().getCompanyId().equals(providerCompany.getCompanyId()))) {
+
+            throw new ServiceException("Service already exists for this client-provider pair");
+        }
+
+        // Update fields
+        service.setServiceName(serviceName);
+        service.setClientCompany(clientCompany);
+        service.setProviderCompany(providerCompany);
+
+        try {
+            Services updated = servicesRepository.save(service);
+            log.info("Successfully updated service with ID: {}", serviceId);
+            return ServiceMapper.toResponse(updated);
+
+        } catch (Exception e) {
+            log.error("Failed to update service with ID: {}", serviceId, e);
+            throw new ServiceException("Failed to update service", e);
+        }
+    }
+
 }

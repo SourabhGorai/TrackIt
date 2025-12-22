@@ -4,6 +4,7 @@ import com.trackIt.independent_services.dto.ApiResponse;
 import com.trackIt.independent_services.mapper.PriorityMapper;
 import com.trackIt.independent_services.model.Priorities;
 import com.trackIt.independent_services.service.PriorityService;
+import jakarta.ws.rs.Path;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.RequestEntity;
@@ -44,9 +45,18 @@ public class PriorityController {
         );
     }
 
+    @GetMapping("/{id}")
+    public ResponseEntity<ApiResponse<?>> getById(@PathVariable Long id){
+        log.info("REST received to get priority: {}", id);
+        Priorities priorities = priorityService.getById(id);
+        return ResponseEntity.ok(
+                ApiResponse.success("Priority fetched successfully", priorities)
+        );
+    }
+
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse<?>> deletePriority(@PathVariable Long id){
-        log.info("REST received to delete role: {}", id);
+        log.info("REST received to delete priority: {}", id);
         priorityService.deletePriority(id);
         log.info("Deleted role: {}", id);
 

@@ -6,6 +6,7 @@ import com.trackIt.independent_services.service.ServicesService;
 import jakarta.ws.rs.Path;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.coyote.Response;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -109,5 +110,29 @@ public class ServicesController {
                 ApiResponse.success(String.format("%d services fetched", list.size()), list)
         );
     }
+
+    @GetMapping("validate/{id}")
+    public ResponseEntity<Boolean> validateService(@PathVariable Long id) {
+        log.info("REST received to validate service with id: {}", id);
+        boolean validation = servicesService.validateService(id);
+        return ResponseEntity.ok(validation);
+    }
+
+    @PutMapping("/{serviceId}")
+    public ResponseEntity<ApiResponse<ServicesResponse>> updateService(
+            @PathVariable Long serviceId,
+            @RequestBody ServicesRequest request
+    ) {
+        request.setServiceName(ServiceMapper.sanitizeName(request.getServiceName()));
+
+        log.info("REST received to update service with ID: {}", serviceId);
+
+        ServicesResponse resp = servicesService.updateService(serviceId, request);
+
+        return ResponseEntity.ok(
+                ApiResponse.success("Service updated successfully", resp)
+        );
+    }
+
 
 }
