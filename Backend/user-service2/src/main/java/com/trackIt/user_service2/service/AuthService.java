@@ -131,11 +131,18 @@ public class AuthService {
                 new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
         );
 
-        String accessToken = jwtService.generateToken(user);
-        String refreshToken = jwtService.generateRefreshToken(user);
-
+        // ✅ Fetch role and company information
         RoleResponse role = independentServiceClient.validateRole(user.getRoleId());
         CompanyResponse company = independentServiceClient.validateCompany(user.getCompanyId());
+
+        // ✅ Set role name in user object for token generation
+        if (role != null) {
+            user.setRoleName(role.getRole());
+        }
+
+        // ✅ Generate tokens with enriched user data
+        String accessToken = jwtService.generateToken(user);
+        String refreshToken = jwtService.generateRefreshToken(user);
 
         UserResponse userResponse = UserMapper.toResponseWithDetails(
                 user,
@@ -143,7 +150,8 @@ public class AuthService {
                 company != null ? company.getCompanyName() : null
         );
 
-        log.info("User logged in successfully: {}", request.getEmail());
+        log.info("User logged in successfully: {} with role: {}",
+                request.getEmail(), role != null ? role.getRole() : "UNKNOWN");
 
         return AuthResponse.builder()
                 .accessToken(accessToken)
@@ -166,11 +174,17 @@ public class AuthService {
         Users user = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new UserNotFoundException("User not found"));
 
-        String newAccessToken = jwtService.generateToken(userDetails);
-        String newRefreshToken = jwtService.generateRefreshToken(userDetails);
-
+        // ✅ Fetch role information
         RoleResponse role = independentServiceClient.validateRole(user.getRoleId());
         CompanyResponse company = independentServiceClient.validateCompany(user.getCompanyId());
+
+        // ✅ Set role name for token generation
+        if (role != null) {
+            user.setRoleName(role.getRole());
+        }
+
+        String newAccessToken = jwtService.generateToken(user);
+        String newRefreshToken = jwtService.generateRefreshToken(user);
 
         UserResponse userResponse = UserMapper.toResponseWithDetails(
                 user,

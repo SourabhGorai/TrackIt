@@ -2,14 +2,11 @@ package com.trackIt.independent_services.service;
 
 import com.trackIt.independent_services.dto.CompanyRequest;
 import com.trackIt.independent_services.dto.CompanyResponse;
-import com.trackIt.independent_services.dto.RolesResponse;
 import com.trackIt.independent_services.exception.AlreadyExistsException;
 import com.trackIt.independent_services.exception.NotFoundException;
 import com.trackIt.independent_services.exception.ServiceException;
 import com.trackIt.independent_services.mapper.CompanyMapper;
-import com.trackIt.independent_services.mapper.RoleMapper;
 import com.trackIt.independent_services.model.Companies;
-import com.trackIt.independent_services.model.Roles;
 import com.trackIt.independent_services.repository.CompanyRepository;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -18,7 +15,6 @@ import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.rmi.server.ServerCloneException;
 import java.util.List;
 
 @Service
@@ -47,11 +43,8 @@ public class CompanyService {
         if(companyRepository.existsByCompanyNameAndIsDeletedTrue(sanitizedCompanyName)){
             log.info("Re-activating previously deleted company: {}", sanitizedCompanyName);
             Companies companies = companyRepository.findByCompanyNameAndIsDeletedTrue(sanitizedCompanyName)
-                    .orElseThrow(() -> new NotFoundException("Club",sanitizedCompanyName));
+                    .orElseThrow(() -> new NotFoundException("Company",sanitizedCompanyName));
 
-//            companies.setCompanyId(companies.getCompanyId());
-//            companies.setCompanyName(companies.getCompanyName());
-//            companies.setCompanyType(companies.getCompanyType());
             companies.restore();
 
             Companies reactivated = companyRepository.save(companies);
@@ -122,7 +115,7 @@ public class CompanyService {
     public void delete(String companyName) {
 
         String sanitizedName = CompanyMapper.sanitizeName(companyName);
-        log.info("Attempt to delete role: {}", sanitizedName);
+        log.info("Attempt to delete company: {}", sanitizedName);
 
         try{
             Companies company = companyRepository.findByCompanyName(sanitizedName)
@@ -130,17 +123,52 @@ public class CompanyService {
 
             company.softDelete();
             companyRepository.save(company);
-            log.info("Deleted role: {}", sanitizedName);
+            log.info("Deleted company: {}", sanitizedName);
 
         }catch(Exception e){
-            log.info("Failed to delete role: {}", sanitizedName);
-            throw new ServiceException("Failed to delete role: "+sanitizedName, e);
+            log.info("Failed to delete company: {}", sanitizedName);
+            throw new ServiceException("Failed to delete company: "+sanitizedName, e);
         }
 
     }
 
+    @Transactional(readOnly = true)
     public CompanyResponse validateCompany(Long companyId) {
-        Companies companies = companyRepository.findById(companyId).orElseThrow();
+        Companies companies = companyRepository.findById(companyId)
+                .orElseThrow(() -> new NotFoundException("Company", companyId.toString()));
         return CompanyMapper.toResponse(companies);
+    }
+
+
+    public Companies getById(Long id) {
+        log.info("Trying to fetch company with ID: {}", id);
+        try{
+            return companyRepository.findById(id).orElseThrow();
+        }catch(Exception e){
+            log.info("Failed to fetch company with Id: {}", id);
+            throw new NotFoundException("Services", id.toString());
+        }
+    }
+
+    public List<CompanyResponse> getClients() {
+        log.info("Attempting to fetch all the Clients");
+        try{
+            List<Companies> companies = companyRepository.findByCompanyType("CLIENT");
+            return CompanyMapper.toResponseList(companies);
+        }catch(Exception e){
+            log.info("Failed to fetch clients");
+            throw new ServiceException("Failed to get clients", e);
+        }
+    }
+
+    public List<CompanyResponse> getProviders() {
+        log.info("Attempting to fetch all the providers");
+        try{
+            List<Companies> companies = companyRepository.findByCompanyType("PROVIDER");
+            return CompanyMapper.toResponseList(companies);
+        }catch(Exception e){
+            log.info("Failed to fetch providers");
+            throw new ServiceException("Failed to get providers", e);
+        }
     }
 }

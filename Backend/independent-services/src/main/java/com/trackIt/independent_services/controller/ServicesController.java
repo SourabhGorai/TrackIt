@@ -14,13 +14,13 @@ import java.util.List;
 @RestController
 @Slf4j
 @RequiredArgsConstructor
-@RequestMapping("api/services")
+@RequestMapping("/api/services")
 public class ServicesController {
 
     private final ServicesService servicesService;
 
     @PostMapping
-    public ResponseEntity<ApiResponse<ServicesResponse>> addService(@RequestBody ServicesRequest request){
+    public ResponseEntity<ApiResponse<ServicesResponse>> addService(@RequestBody ServicesRequest request) {
 
         request.setServiceName(ServiceMapper.sanitizeName(request.getServiceName()));
         log.info("REST received to add service with name: {}", request.getServiceName());
@@ -33,7 +33,7 @@ public class ServicesController {
     }
 
     @GetMapping
-    public ResponseEntity<ApiResponse<List<ServicesResponse>>> getAll(){
+    public ResponseEntity<ApiResponse<List<ServicesResponse>>> getAll() {
         log.info("REST received to list all services");
 
         List<ServicesResponse> resp = servicesService.getAll();
@@ -46,20 +46,20 @@ public class ServicesController {
 
     @GetMapping("/{serviceId}")
     public ResponseEntity<ApiResponse<ServicesResponse>> getById(
-            @PathVariable Long serviceId){
+            @PathVariable Long serviceId) {
 
-        log.info("REST received to list service with ID: {}",serviceId);
+        log.info("REST received to list service with ID: {}", serviceId);
 
         ServicesResponse resp = servicesService.getById(serviceId);
 
         return ResponseEntity.ok(
                 ApiResponse.success(String.format("Received the service with name: %s",
-                        resp.getServiceName()) , resp)
+                        resp.getServiceName()), resp)
         );
     }
 
     @GetMapping("public")
-    public ResponseEntity<ApiResponse<List<ServicesResponsePublic>>> getAllPublic(){
+    public ResponseEntity<ApiResponse<List<ServicesResponsePublic>>> getAllPublic() {
         log.info("REST received to list all services");
 
         List<ServicesResponsePublic> resp = servicesService.getAllPublic();
@@ -71,11 +71,42 @@ public class ServicesController {
     }
 
     @DeleteMapping("/{id}")
-    public  ResponseEntity<?> deleteService(@PathVariable Long id){
+    public ResponseEntity<ApiResponse<?>> deleteService(@PathVariable Long id) {
         log.info("REST received to delete service with ID: {}", id);
         servicesService.deleteService(id);
         return ResponseEntity.ok(
-                ApiResponse.success(String.format("Service with ID '{}' deleted successfully", id))
+                ApiResponse.success(String.format("Service with ID '%d' deleted successfully", id))
+        );
+    }
+
+    @GetMapping("/clientCompany/{id}")
+    public ResponseEntity<ApiResponse<List<ServicesResponse>>> getByClientCompany(
+            @PathVariable Long id) {
+        log.info("REST received to list all the services related by " +
+                "Client Company with ID: {}", id);
+        List<ServicesResponse> list = servicesService.getListWRTClient(id);
+        return ResponseEntity.ok(
+                ApiResponse.success(String.format("%d services fetched", list.size()), list)
+        );
+    }
+
+    @GetMapping("/providerCompany/{id}")
+    public ResponseEntity<ApiResponse<List<ServicesResponse>>> getByProviderCompany(
+            @PathVariable Long id) {
+        log.info("REST received to list all the services provider Company with ID: {}", id);
+        List<ServicesResponse> list = servicesService.getListWRTProvider(id);
+        return ResponseEntity.ok(
+                ApiResponse.success(String.format("%d services fetched", list.size()), list)
+        );
+    }
+
+    @GetMapping("/serviceName/{name}")
+    public ResponseEntity<ApiResponse<List<ServicesResponse>>> getByServiceName(@PathVariable String name) {
+        String sanitizeName = ServiceMapper.sanitizeName(name);
+        log.info("REST received to list all the services with name: {}", sanitizeName);
+        List<ServicesResponse> list = servicesService.getAllByName(sanitizeName);
+        return ResponseEntity.ok(
+                ApiResponse.success(String.format("%d services fetched", list.size()), list)
         );
     }
 

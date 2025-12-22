@@ -2,9 +2,9 @@ package com.trackIt.api_gateway.filter;
 
 import com.trackIt.api_gateway.util.JwtUtil;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.cloud.gateway.filter.factory.AbstractGatewayFilterFactory;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.http.server.reactive.ServerHttpResponse;
@@ -16,11 +16,11 @@ import reactor.core.publisher.Mono;
 @Slf4j
 public class AuthenticationFilter extends AbstractGatewayFilterFactory<AuthenticationFilter.Config> {
 
-    private final JwtUtil jwtUtil;
+    @Autowired
+    private JwtUtil jwtUtil;
 
-    public AuthenticationFilter(JwtUtil jwtUtil) {
+    public AuthenticationFilter() {
         super(Config.class);
-        this.jwtUtil = jwtUtil;
     }
 
     @Override
@@ -30,52 +30,46 @@ public class AuthenticationFilter extends AbstractGatewayFilterFactory<Authentic
 
             log.debug("Processing authentication for path: {}", request.getPath());
 
-            // Check if Authorization header exists
-            if (!request.getHeaders().containsKey(HttpHeaders.AUTHORIZATION)) {
-                log.warn("Missing Authorization header for path: {}", request.getPath());
-                return onError(exchange, "Missing Authorization header", HttpStatus.UNAUTHORIZED);
-            }
-
-            String authHeader = request.getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
+            // Extract Authorization header
+            String authHeader = request.getHeaders().getFirst("Authorization");
 
             if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-                log.warn("Invalid Authorization header format");
-                return onError(exchange, "Invalid Authorization header format. Expected: Bearer <token>",
-                        HttpStatus.UNAUTHORIZED);
+                log.warn("Missing or invalid Authorization header for path: {}", request.getPath());
+                return onError(exchange, "Missing or invalid Authorization header", HttpStatus.UNAUTHORIZED);
             }
 
+            // Extract token
             String token = authHeader.substring(7);
 
             try {
-                // Validate JWT token
+                // Validate token
                 jwtUtil.validateToken(token);
 
-                // Extract user information
+                // Extract claims from token
                 String username = jwtUtil.extractUsername(token);
                 String role = jwtUtil.extractRole(token);
                 Long userId = jwtUtil.extractUserId(token);
 
                 log.debug("Authenticated user: {} with role: {}", username, role);
 
-                // Add user information to request headers for downstream services
-                ServerHttpRequest modifiedRequest = exchange.getRequest().mutate()
+                // Add user info to request headers for downstream services
+                ServerHttpRequest modifiedRequest = exchange.getRequest()
+                        .mutate()
                         .header("X-User-Username", username)
-                        .header("X-User-Role", role)
+                        .header("X-User-Role", role != null ? role : "")
                         .header("X-User-Id", userId != null ? userId.toString() : "")
                         .build();
 
+                // Continue with modified exchange
                 return chain.filter(exchange.mutate().request(modifiedRequest).build());
 
             } catch (Exception e) {
-                log.error("JWT validation failed: {}", e.getMessage());
-                return onError(exchange, "Invalid or expired JWT token", HttpStatus.UNAUTHORIZED);
+                log.error("Authentication failed: {}", e.getMessage());
+                return onError(exchange, "Invalid or expired token", HttpStatus.UNAUTHORIZED);
             }
         };
     }
 
-    /**
-     * Handle authentication errors
-     */
     private Mono<Void> onError(ServerWebExchange exchange, String message, HttpStatus status) {
         ServerHttpResponse response = exchange.getResponse();
         response.setStatusCode(status);
@@ -90,7 +84,6 @@ public class AuthenticationFilter extends AbstractGatewayFilterFactory<Authentic
         );
 
         byte[] bytes = errorResponse.getBytes(java.nio.charset.StandardCharsets.UTF_8);
-
         return response.writeWith(Mono.just(response.bufferFactory().wrap(bytes)));
     }
 

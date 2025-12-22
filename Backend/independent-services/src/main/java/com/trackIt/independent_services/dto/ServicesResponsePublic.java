@@ -12,7 +12,7 @@ import lombok.RequiredArgsConstructor;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class ServicesResponsePublic {
 
-    public Long ServiceId;
-    public String ServiceName;
+    public Long serviceId;
+    public String serviceName;
 
 }

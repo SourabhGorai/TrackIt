@@ -30,4 +30,10 @@ public interface ServicesRepository extends JpaRepository<Services, Long> {
 
     // Find services by name
     List<Services> findByServiceName(String serviceName);
+
+    boolean existsByServiceNameAndClientCompany_CompanyIdAndProviderCompany_CompanyId(
+            String serviceName,
+            Long clientCompanyId,
+            Long providerCompanyId
+    );
 }

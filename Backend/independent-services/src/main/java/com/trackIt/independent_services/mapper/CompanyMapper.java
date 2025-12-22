@@ -42,6 +42,7 @@ public class CompanyMapper {
                 .companyId(company.getCompanyId())
                 .companyName(company.getCompanyName())
                 .companyType(company.getCompanyType())
+                .isDeleted(company.isDeleted())
                 .build();
     }
 

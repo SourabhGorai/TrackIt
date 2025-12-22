@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("api/companies")
+@RequestMapping("/api/companies")
 @Slf4j
 @AllArgsConstructor
 public class CompanyController {
@@ -82,4 +82,31 @@ public class CompanyController {
         System.out.println(resp);
         return ResponseEntity.ok(resp);
     }
+
+    @GetMapping("/getById/{id}")
+    public ResponseEntity<?> getById(@PathVariable Long id){
+        log.info("REST received to get company with Id: {}", id);
+        Companies resp = companyService.getById(id);
+        System.out.println(resp);
+        return ResponseEntity.ok(ApiResponse.success("Received Successfully", resp));
+    }
+
+    @GetMapping("/clientCompany")
+    public ResponseEntity<ApiResponse<List<CompanyResponse>>> getClients(){
+        log.info("REST received to get all client companies");
+        List<CompanyResponse> resp = companyService.getClients();
+        return ResponseEntity.ok(
+                ApiResponse.success("Received Successfully", resp)
+        );
+    }
+
+    @GetMapping("/providerCompany")
+    public ResponseEntity<ApiResponse<List<CompanyResponse>>> getProviders(){
+        log.info("REST received to get all provider companies");
+        List<CompanyResponse> resp = companyService.getProviders();
+        return ResponseEntity.ok(
+                ApiResponse.success("Received Successfully", resp)
+        );
+    }
+
 }

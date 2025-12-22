@@ -32,4 +32,9 @@ public interface CompanyRepository extends JpaRepository<Companies, Long> {
 
     // Check if company exists and is active
     boolean existsByCompanyIdAndIsDeletedFalse(Long companyId);
+
+    boolean existsByCompanyIdAndCompanyTypeAndIsDeletedFalse(
+            Long companyId,
+            String companyType
+    );
 }

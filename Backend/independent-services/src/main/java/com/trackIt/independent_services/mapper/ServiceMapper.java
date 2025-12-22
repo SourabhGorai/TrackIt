@@ -60,8 +60,8 @@ public class ServiceMapper {
         }
 
         return ServicesResponsePublic.builder()
-                .ServiceId(service.getServiceId())
-                .ServiceName(service.getServiceName())
+                .serviceId(service.getServiceId())
+                .serviceName(service.getServiceName())
                 .build();
     }
 

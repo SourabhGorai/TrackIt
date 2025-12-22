@@ -1,5 +1,6 @@
 package com.trackIt.user_service2.service;
 
+import com.trackIt.user_service2.model.Users;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
@@ -50,14 +51,28 @@ public class JwtService {
                 .getPayload();
     }
 
+    /**
+     * Generate token with user details including role and userId
+     */
     public String generateToken(UserDetails userDetails) {
         Map<String, Object> claims = new HashMap<>();
-        // Add role to JWT claims if available
-        if (userDetails.getAuthorities() != null && !userDetails.getAuthorities().isEmpty()) {
-            claims.put("roles", userDetails.getAuthorities().stream()
-                    .map(auth -> auth.getAuthority())
-                    .toList());
+
+        // Extract user information from Users entity
+        if (userDetails instanceof Users) {
+            Users user = (Users) userDetails;
+
+            // ✅ Add role without ROLE_ prefix (just "ADMIN", "MANAGER", etc.)
+            if (user.getRoleName() != null && !user.getRoleName().isEmpty()) {
+                claims.put("role", user.getRoleName());
+                log.debug("Added role to token: {}", user.getRoleName());
+            }
+
+            // ✅ Add userId
+            claims.put("userId", user.getId());
+            log.debug("Generated token for user: {} with role: {} and userId: {}",
+                    user.getEmail(), user.getRoleName(), user.getId());
         }
+
         return generateToken(claims, userDetails);
     }
 

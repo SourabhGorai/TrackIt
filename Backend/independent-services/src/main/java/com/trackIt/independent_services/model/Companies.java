@@ -20,7 +20,7 @@ public class Companies {
 
 
     @Column(nullable = false)
-    private String companyType;
+    private String companyType;   // client & provider
 
     @Column(nullable = false)
     private boolean isDeleted;

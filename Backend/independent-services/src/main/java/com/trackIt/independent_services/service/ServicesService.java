@@ -12,7 +12,10 @@ import com.trackIt.independent_services.repository.CompanyRepository;
 import com.trackIt.independent_services.repository.ServicesRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -24,15 +27,52 @@ public class ServicesService {
     private final ServicesRepository servicesRepository;
     private final CompanyRepository companyRepository;
 
+    @Transactional
+    @CacheEvict(
+            value = {
+                    "services",
+                    "servicesPublic",
+                    "servicesByClient",
+                    "servicesByProvider",
+                    "servicesByName"
+            },
+            allEntries = true
+    )
     public ServicesResponse addService(ServicesRequest request) {
 
         // Fetch client company
         Companies clientCompany = companyRepository.findById(request.getClientCompanyId())
                 .orElseThrow(() -> new RuntimeException("Client company not found"));
 
+        if(!clientCompany.getCompanyType().equals("CLIENT")){
+            throw new ServiceException(String.format("No client company exists with ID: %d",
+                    request.getClientCompanyId()));
+        }
+
+        log.info("Attempting to create service: {}, for client: {}",
+                request.getServiceName(), clientCompany.getCompanyName());
+
+        boolean exists = servicesRepository
+                .existsByServiceNameAndClientCompany_CompanyIdAndProviderCompany_CompanyId(
+                        request.getServiceName(),
+                        request.getClientCompanyId(),
+                        request.getProviderCompanyId()
+                );
+
+        if (exists) {
+            throw new ServiceException(
+                    "Service already exists for this client-provider pair"
+            );
+        }
+
         // Fetch provider company
         Companies providerCompany = companyRepository.findById(request.getProviderCompanyId())
                 .orElseThrow(() -> new RuntimeException("Provider company not found"));
+
+        if(!providerCompany.getCompanyType().equals("PROVIDER")){
+            throw new ServiceException(String.format("No provider company exists with ID: %d",
+                    request.getClientCompanyId()));
+        }
 
         log.info(
                 "Received request to add new Service '{}' for client company '{}' (ID={})",
@@ -62,6 +102,8 @@ public class ServicesService {
         }
     }
 
+    @Transactional(readOnly = true)
+    @Cacheable(value = "services")
     public List<ServicesResponse> getAll() {
 
         log.info("Received request to fetch all services");
@@ -69,12 +111,16 @@ public class ServicesService {
         return ServiceMapper.toResponseList(list);
     }
 
+    @Transactional(readOnly = true)
+    @Cacheable(value = "servicesPublic")
     public List<ServicesResponsePublic> getAllPublic() {
         log.info("Received request to fetch all services in public view");
         List<Services> list = servicesRepository.findAll();
         return ServiceMapper.toResponseListPublic(list);
     }
 
+    @Transactional(readOnly = true)
+    @Cacheable(value = "servicesById", key = "#serviceId")
     public ServicesResponse getById(Long serviceId) {
 
         log.info("Received request to fetch data for service with id: {}", serviceId);
@@ -89,6 +135,18 @@ public class ServicesService {
     }
 
 
+    @CacheEvict(
+            value = {
+                    "services",
+                    "servicesPublic",
+                    "servicesById",
+                    "servicesByClient",
+                    "servicesByProvider",
+                    "servicesByName"
+            },
+            allEntries = true
+    )
+    @Transactional
     public void deleteService(Long id) {
         log.info("Request received to delete service with ID: {}", id);
 
@@ -100,5 +158,51 @@ public class ServicesService {
             throw new ServiceException("Failed to delete service with ID: "
                     +id, e);
         }
+    }
+
+    @Transactional(readOnly = true)
+    @Cacheable(value = "servicesByClient", key = "#id")
+    public List<ServicesResponse> getListWRTClient(Long id) {
+        log.info("Attempting to fetch services related to client with company ID: {}", id);
+
+        List<Services> list = servicesRepository.findByClientCompany_CompanyId(id);
+
+        if (list.isEmpty()) {
+            log.info("No services found for Client Company id: {}", id);
+            throw new NotFoundException("Services", id.toString());
+        }
+
+        log.info("Fetched services successfully");
+        return ServiceMapper.toResponseList(list);
+    }
+
+    @Transactional(readOnly = true)
+    @Cacheable(value = "servicesByProvider", key = "#id")
+    public List<ServicesResponse> getListWRTProvider(Long id) {
+        log.info("Attempting to fetch services provided by company with ID: {}", id);
+
+        List<Services> list = servicesRepository.findByProviderCompany_CompanyId(id);
+
+        if (list.isEmpty()) {
+            log.info("No services found for Provider Company id: {}", id);
+            throw new NotFoundException("Services", id.toString());
+        }
+
+        log.info("Fetched services successfully.");
+        return ServiceMapper.toResponseList(list);
+    }
+
+    @Transactional(readOnly = true)
+    @Cacheable(value = "servicesByName", key = "#sanitizeName")
+    public List<ServicesResponse> getAllByName(String sanitizeName) {
+        log.info("Attempting to fetch services by name: {}", sanitizeName);
+        List<Services> list = servicesRepository.findByServiceName(sanitizeName);
+        if(list.isEmpty()){
+            log.info("No services found by name: {}", sanitizeName);
+            throw new NotFoundException("Services", sanitizeName);
+        }
+
+        log.info("Successfully fetched {} services", list.size());
+        return ServiceMapper.toResponseList(list);
     }
 }

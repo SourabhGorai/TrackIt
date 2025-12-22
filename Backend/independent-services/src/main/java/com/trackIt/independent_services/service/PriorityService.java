@@ -7,6 +7,8 @@ import com.trackIt.independent_services.model.Priorities;
 import com.trackIt.independent_services.repository.PriorityRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,6 +21,7 @@ public class PriorityService {
 
     private final PriorityRepository priorityRepository;
 
+    @CacheEvict(value = "priorities", allEntries = true)
     @Transactional
     public Priorities addNew(String priorityLevel){
         if(priorityRepository.existsByPriorityLevel(priorityLevel)){
@@ -44,18 +47,22 @@ public class PriorityService {
         }
     }
 
-    @Transactional
+    @Cacheable(value = "priorities")
+    @Transactional(readOnly = true)
     public List<Priorities> getAll() {
+        log.info("Attempting to fetch all priorities");
         List<Priorities> list = priorityRepository.findAll();
+        log.info("Found {} priorities", list.size());
         return PriorityMapper.toResponseList(list);
     }
 
+    @CacheEvict(value = "priorities", allEntries = true)
+    @Transactional
     public void deletePriority(Long id) {
-        log.info("Request received to delete priority: {}",
-                priorityRepository.findById(id).orElseThrow());
+        log.info("Request received to delete priority with ID: {}", id);
         try{
             priorityRepository.deleteById(id);
-            log.info("Deletion Successful");
+            log.info("Deletion successful for priority ID: {}", id);
         } catch (Exception e) {
             log.info("Failed to delete priority with id: {}", id);
             throw new ServiceException("Failed to delete priority: "+id, e);

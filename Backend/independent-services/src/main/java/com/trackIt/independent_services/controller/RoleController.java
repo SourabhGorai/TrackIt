@@ -14,7 +14,7 @@ import java.util.List;
 @RestController
 @AllArgsConstructor
 @Slf4j
-@RequestMapping("api/roles")
+@RequestMapping("/api/roles")
 public class RoleController {
 
     private final RoleService roleService;
