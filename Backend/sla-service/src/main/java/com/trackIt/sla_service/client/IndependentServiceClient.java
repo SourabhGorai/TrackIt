@@ -80,7 +80,7 @@ public class IndependentServiceClient {
 
             return webClientBuilder.build()
                     .get()
-                    .uri(independentServiceUrl + "/priorities/{priorityId}", priorityId)
+                    .uri(independentServiceUrl + "/priority/{priorityId}", priorityId)
                     .retrieve()
                     .bodyToMono(PriorityResponse.class)
                     .timeout(Duration.ofSeconds(5))

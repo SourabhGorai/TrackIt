@@ -23,7 +23,7 @@ public class SlaRulesController {
 
     @PostMapping
     public ResponseEntity<ApiResponse<SlaRulesResponse<Long>>> addRule(
-            @RequestBody SlaRulesRequest request) {
+            @RequestBody @Valid SlaRulesRequest request) {
 
         log.info("REST received to add SLA Rule with service ID: {}", request.getServiceId());
 
@@ -46,12 +46,13 @@ public class SlaRulesController {
                 ApiResponse.success(String.format("Received list of size %d",
                         responses.size()), responses)
         );
-
     }
 
-    @GetMapping("/{slaRuleId}")
+    @GetMapping("/rule/{slaRuleId}")
     public ResponseEntity<ApiResponse<SlaRulesResponse<String>>> getById(
             @PathVariable Long slaRuleId) {
+
+        log.info("REST received to fetch SLA rule by ID: {}", slaRuleId);
 
         return ResponseEntity.ok(
                 ApiResponse.success(
@@ -65,6 +66,8 @@ public class SlaRulesController {
     public ResponseEntity<ApiResponse<List<SlaRulesResponse<String>>>> getByServiceId(
             @PathVariable Long serviceId) {
 
+        log.info("REST received to fetch SLA rules by service ID: {}", serviceId);
+
         return ResponseEntity.ok(
                 ApiResponse.success(
                         "SLA rules fetched successfully",
@@ -73,11 +76,13 @@ public class SlaRulesController {
         );
     }
 
-    @PutMapping("/{slaRuleId}")
+    @PutMapping("/rule/{slaRuleId}")
     public ResponseEntity<ApiResponse<SlaRulesResponse<Long>>> updateRule(
             @PathVariable Long slaRuleId,
             @RequestBody @Valid SlaRulesRequest request
     ) {
+        log.info("REST received to update SLA rule ID: {}", slaRuleId);
+
         return ResponseEntity.ok(
                 ApiResponse.success(
                         "SLA rule updated successfully",
@@ -86,31 +91,31 @@ public class SlaRulesController {
         );
     }
 
-    @DeleteMapping("/{slaRuleId}")
+    @DeleteMapping("/rule/{slaRuleId}")
     public ResponseEntity<ApiResponse<Void>> deleteRule(
             @PathVariable Long slaRuleId
     ) {
+        log.info("REST received to delete SLA rule ID: {}", slaRuleId);
+
         slaRulesServices.deleteRule(slaRuleId);
         return ResponseEntity.ok(
                 ApiResponse.success("SLA rule deleted successfully", null)
         );
     }
 
-    @GetMapping("/{priorityId}")
+    @GetMapping("/priority/{priorityId}")
     public ResponseEntity<ApiResponse<List<SlaRulesPriorityResponse>>> getByPriority(
             @PathVariable Long priorityId
     ) {
 
-        log.info("REST received to display service details Priority ID: {}", priorityId);
+        log.info("REST received to display service details for Priority ID: {}", priorityId);
 
         List<SlaRulesPriorityResponse> list = slaRulesServices.getByPriority(priorityId);
         return ResponseEntity.ok(
                 ApiResponse.success(String.format(
-                        "Fetched list of size: %d", list.size()),
+                                "Fetched list of size: %d", list.size()),
                         list
                 )
         );
-
     }
-
 }

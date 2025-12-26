@@ -3,6 +3,7 @@ package com.trackIt.independent_services.service;
 import com.trackIt.independent_services.exception.AlreadyExistsException;
 import com.trackIt.independent_services.exception.NotFoundException;
 import com.trackIt.independent_services.exception.ServiceException;
+import com.trackIt.independent_services.mapper.CompanyMapper;
 import com.trackIt.independent_services.mapper.PriorityMapper;
 import com.trackIt.independent_services.model.Priorities;
 import com.trackIt.independent_services.repository.PriorityRepository;
@@ -30,8 +31,10 @@ public class PriorityService {
             throw new AlreadyExistsException("Priority", priorityLevel);
         }
 
+        String sanitizePriority = CompanyMapper.sanitizeName(priorityLevel);
+
         Priorities priorities = Priorities.builder()
-                .priorityLevel(priorityLevel)
+                .priorityLevel(sanitizePriority)
                 .build();
 
         try {
@@ -42,8 +45,8 @@ public class PriorityService {
 
         } catch (Exception e) {
 
-            log.info("Failed to add priority: {}", priorityLevel);
-            throw new ServiceException("Failed to add priority: " + priorityLevel, e);
+            log.info("Failed to add priority: {}", sanitizePriority);
+            throw new ServiceException("Failed to add priority: " + sanitizePriority, e);
 
         }
     }

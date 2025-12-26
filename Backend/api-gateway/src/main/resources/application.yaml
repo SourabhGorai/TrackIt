@@ -55,6 +55,14 @@ spring:
               filters:
                 - AuthenticationFilter
 
+            # ---------- SLA SERVICE (PROTECTED) ------------
+            - id: sla-service-protected
+              uri: lb://SLA-SERVICE
+              predicates:
+                - Path=/api/**
+              filters:
+                - AuthenticationFilter
+
           # ================= CORS =================
           globalcors:
             cors-configurations:

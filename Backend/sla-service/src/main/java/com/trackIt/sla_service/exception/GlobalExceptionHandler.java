@@ -1,6 +1,6 @@
 package com.trackIt.sla_service.exception;
 
-import com.trackIt.independent_services.dto.ApiResponse;
+import com.trackIt.sla_service.dto.ApiResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

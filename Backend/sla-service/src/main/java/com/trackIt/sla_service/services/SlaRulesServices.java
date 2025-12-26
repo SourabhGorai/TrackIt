@@ -10,6 +10,8 @@ import com.trackIt.sla_service.model.SlaRules;
 import com.trackIt.sla_service.repository.SlaRulesRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,6 +27,15 @@ public class SlaRulesServices {
     private final SlaRulesRepository slaRulesRepository;
     private final IndependentServiceClient independentServiceClient;
 
+    @CacheEvict(
+            value = {
+                    "rules",
+                    "ruleById",
+                    "ruleByServiceId",
+                    "ruleByPriorityId"
+            },
+            allEntries = true
+    )
     @Transactional
     public SlaRulesResponse<Long> addRule(SlaRulesRequest request) {
 
@@ -81,6 +92,7 @@ public class SlaRulesServices {
     }
 
 
+    @Cacheable(value = "rules")
     @Transactional(readOnly = true)
     public List<SlaRulesResponse<String>> getAll() {
 
@@ -119,6 +131,7 @@ public class SlaRulesServices {
         }
     }
 
+    @Cacheable(value = "ruleById", key = "#slaRuleId")
     @Transactional(readOnly = true)
     public SlaRulesResponse<String> getBySlaRuleId(Long slaRuleId) {
 
@@ -145,6 +158,7 @@ public class SlaRulesServices {
         }
     }
 
+    @Cacheable(value = "ruleByServiceId", key = "#serviceId")
     @Transactional(readOnly = true)
     public List<SlaRulesResponse<String>> getByServiceId(Long serviceId) {
 
@@ -182,6 +196,15 @@ public class SlaRulesServices {
         }
     }
 
+    @CacheEvict(
+            value = {
+                    "rules",
+                    "ruleById",
+                    "ruleByServiceId",
+                    "ruleByPriorityId"
+            },
+            allEntries = true
+    )
     @Transactional
     public SlaRulesResponse<Long> updateRule(Long slaRuleId, SlaRulesRequest request) {
 
@@ -231,6 +254,15 @@ public class SlaRulesServices {
         }
     }
 
+    @CacheEvict(
+            value = {
+                    "rules",
+                    "ruleById",
+                    "ruleByServiceId",
+                    "ruleByPriorityId"
+            },
+            allEntries = true
+    )
     @Transactional
     public void deleteRule(Long slaRuleId) {
 
@@ -261,6 +293,8 @@ public class SlaRulesServices {
     }
 
 
+    @Transactional
+    @Cacheable(value = "ruleByPriorityId", key = "#priorityId")
     public List<SlaRulesPriorityResponse> getByPriority(Long priorityId) {
 
         log.info("Attempting to list services with priority ID: {}", priorityId);

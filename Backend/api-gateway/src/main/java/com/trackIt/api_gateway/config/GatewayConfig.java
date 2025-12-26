@@ -128,90 +128,51 @@ public class GatewayConfig {
                                 new AuthenticationFilter.Config())))
                         .uri("lb://USER-SERVICE2"))
 
+                // ========================================
+                // CORRECTED SLA SERVICE GATEWAY ROUTES
+                // ========================================
+                // Add these routes to your GatewayConfig.customRouteLocator() method
+
+                // ---------- ADMIN ONLY ROUTES (SLA) ----------
+                .route("admin-sla-delete", r -> r
+                        .path("/api/sla/**")
+                        .and().method("DELETE")
+                        .filters(f -> f
+                                .filter(authenticationFilter.apply(new AuthenticationFilter.Config()))
+                                .filter(roleBasedAuthorizationFilter.apply(
+                                        new RoleBasedAuthorizationFilter.Config("ADMIN"))))
+                        .uri("lb://SLA-SERVICE"))
+
+                // ---------- ADMIN & MANAGER ROUTES (SLA) ----------
+                .route("manager-sla-write", r -> r
+                        .path("/api/sla", "/api/sla/rule/**")
+                        .and().method("POST", "PUT")
+                        .filters(f -> f
+                                .filter(authenticationFilter.apply(new AuthenticationFilter.Config()))
+                                .filter(roleBasedAuthorizationFilter.apply(
+                                        new RoleBasedAuthorizationFilter.Config("ADMIN", "MANAGER"))))
+                        .uri("lb://SLA-SERVICE"))
+
+                // ---------- ADMIN, MANAGER & REPORTER ROUTES (SLA) ----------
+                .route("reporter-sla-read", r -> r
+                        .path("/api/sla", "/api/sla/service/**", "/api/sla/priority/**")
+                        .and().method("GET")
+                        .filters(f -> f
+                                .filter(authenticationFilter.apply(new AuthenticationFilter.Config()))
+                                .filter(roleBasedAuthorizationFilter.apply(
+                                        new RoleBasedAuthorizationFilter.Config("ADMIN", "MANAGER", "REPORTER"))))
+                        .uri("lb://SLA-SERVICE"))
+
+                // ---------- ALL AUTHENTICATED ROLES (SLA) ----------
+                .route("authenticated-sla-read", r -> r
+                        .path("/api/sla/rule/**")
+                        .and().method("GET")
+                        .filters(f -> f
+                                .filter(authenticationFilter.apply(new AuthenticationFilter.Config()))
+                                .filter(roleBasedAuthorizationFilter.apply(
+                                        new RoleBasedAuthorizationFilter.Config("ADMIN", "MANAGER", "REPORTER", "SUPPORT_ENGINEER"))))
+                        .uri("lb://SLA-SERVICE"))
+
                 .build();
     }
 }
-
-//package com.trackIt.api_gateway.config;
-//import com.trackIt.api_gateway.filter.AuthenticationFilter;
-//import org.springframework.beans.factory.annotation.Autowired;
-//import org.springframework.cloud.gateway.route.RouteLocator;
-//import org.springframework.cloud.gateway.route.builder.RouteLocatorBuilder;
-//import org.springframework.context.annotation.Bean;
-//import org.springframework.context.annotation.Configuration;
-//
-///**
-// * Gateway configuration class
-// * Routes can be defined here programmatically or in application.yml
-// * Currently using application.yml for route definitions
-// */
-//@Configuration
-//public class GatewayConfig {
-//
-//    private final AuthenticationFilter authenticationFilter;
-//
-//    // Inject AuthenticationFilter
-//    @Autowired
-//    public GatewayConfig(AuthenticationFilter authenticationFilter) {
-//        this.authenticationFilter = authenticationFilter;
-//    }
-//
-//    @Bean
-//    public RouteLocator customRouteLocator(RouteLocatorBuilder builder) {
-//        return builder.routes()
-//
-//                // ---------- PUBLIC ----------
-//                .route("user-auth", r -> r
-//                        .path("/api/auth/**")
-//                        .uri("lb://USER-SERVICE2"))
-//
-//                .route("public-roles", r -> r
-//                        .path("/api/roles")
-//                        .uri("lb://INDEPENDENT-SERVICES"))
-//
-//                .route("public-companies", r -> r
-//                        .path("/api/companies/active")
-//                        .uri("lb://INDEPENDENT-SERVICES"))
-//
-//                // ---------- PROTECTED ----------
-//                .route("user-auth", r -> r
-//                        .path("/api/auth/register")
-//                        .uri("lb://USER-SERVICE2"))
-//
-//                .route("user-management", r -> r
-//                        .path("/api/users/**")
-//                        .filters(f -> f.filter(authenticationFilter.apply(
-//                                new AuthenticationFilter.Config())))
-//                        .uri("lb://USER-SERVICE2"))
-//
-//                .route("independent-protected", r -> r
-//                        .path("/api/**")
-//                        .filters(f -> f.filter(authenticationFilter.apply(
-//                                new AuthenticationFilter.Config())))
-//                        .uri("lb://INDEPENDENT-SERVICES"))
-//
-//                .build();
-//    }
-//
-//
-////    @Bean
-////    public RouteLocator customRouteLocator(RouteLocatorBuilder builder) {
-////        return builder.routes()
-////                // User Service - Auth endpoints (public)
-////                .route("user-auth", r -> r
-////                        .path("/api/auth/**")
-////                        .uri("lb://USER-SERVICE2"))
-////
-////                .route("roles-auth", r -> r
-////                        .path("/api/roles", "/api/companies")
-////                        .uri("lb://INDEPENDENT-SERVICES"))
-////
-////                // User Service - User management (protected)
-////                .route("user-management", r -> r
-////                        .path("/api/users/**")
-////                        .filters(f -> f.filter(authenticationFilter.apply(new AuthenticationFilter.Config())))
-////                        .uri("lb://USER-SERVICE"))
-////
-////                .build();
-////    }
-//}
