@@ -14,6 +14,7 @@ import lombok.NoArgsConstructor;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class SlaRulesResponse<T> {
 
+    private Long slaId;
     private Long serviceId;
     private T priorityLevel;
     private Integer response_time_mins;

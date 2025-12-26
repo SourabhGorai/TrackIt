@@ -44,6 +44,7 @@ public class SlaRulesMapper {
         }
 
         return SlaRulesResponse.<String>builder()
+                .slaId(rules.getSlaId())
                 .serviceId(rules.getServiceId())
                 .priorityLevel(priorityName)
                 .response_time_mins(rules.getResponse_time_mins())
@@ -70,6 +71,7 @@ public class SlaRulesMapper {
         }
 
         return SlaRulesResponse.<Long>builder()
+                .slaId(rules.getSlaId())
                 .serviceId(rules.getServiceId())
                 .priorityLevel(rules.getPriorityId())
                 .response_time_mins(rules.getResponse_time_mins())
@@ -119,6 +121,7 @@ public class SlaRulesMapper {
         }
 
         return SlaRulesPriorityResponse.builder()
+                .slaId(list.getSlaId())
                 .slaRulesId(list.getSlaId())
                 .serviceId(list.getServiceId())
                 .response_time_mins(list.getResponse_time_mins())
