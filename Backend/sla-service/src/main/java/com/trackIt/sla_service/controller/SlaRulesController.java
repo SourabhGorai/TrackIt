@@ -1,9 +1,6 @@
 package com.trackIt.sla_service.controller;
 
-import com.trackIt.sla_service.dto.ApiResponse;
-import com.trackIt.sla_service.dto.SlaRulesPriorityResponse;
-import com.trackIt.sla_service.dto.SlaRulesRequest;
-import com.trackIt.sla_service.dto.SlaRulesResponse;
+import com.trackIt.sla_service.dto.*;
 import com.trackIt.sla_service.services.SlaRulesServices;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;

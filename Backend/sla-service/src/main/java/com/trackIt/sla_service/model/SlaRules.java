@@ -1,7 +1,9 @@
+// SlaRules.java - Entity Model
 package com.trackIt.sla_service.model;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -30,10 +32,12 @@ public class SlaRules {
     private Long priorityId;
 
     @NotNull(message = "Response time is required")
-    private int response_time_mins;
+    @Positive(message = "Response time must be positive")
+    private Integer response_time_mins;
 
     @NotNull(message = "Resolution time is required")
-    private int resolution_time_mins;
+    @Positive(message = "Resolution time must be positive")
+    private Integer resolution_time_mins;
 
     @CreationTimestamp
     private LocalDateTime createdAt;
@@ -42,7 +46,8 @@ public class SlaRules {
     private LocalDateTime updatedAt;
 
     @NotNull(message = "Active status required")
-    private boolean isActive;
+    @Builder.Default
+    private boolean isActive = true;
 
     public void activate() {
         this.isActive = true;

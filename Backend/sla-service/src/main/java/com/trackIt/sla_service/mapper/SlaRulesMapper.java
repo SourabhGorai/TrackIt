@@ -1,3 +1,4 @@
+// SlaRulesMapper.java - Removed unused method
 package com.trackIt.sla_service.mapper;
 
 import com.trackIt.sla_service.dto.SlaRulesPriorityResponse;
@@ -18,23 +19,6 @@ public class SlaRulesMapper {
     private static final DateTimeFormatter FORMATTER =
             DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm:ss");
 
-    /**
-     * Utility method to sanitize names (if required in future use cases)
-     */
-    public static String sanitizeName(String name) {
-        if (name == null || name.isBlank()) {
-            return null;
-        }
-
-        return name.trim()
-                .replaceAll("\\s+", " ")
-                .replaceAll("[^a-zA-Z0-9]", "")
-                .toUpperCase();
-    }
-
-    /**
-     * Convert list of SLA rules to response using priority name map
-     */
     public static List<SlaRulesResponse<String>> toResponseList(
             List<SlaRules> rules,
             Map<Long, String> priorityMap
@@ -51,9 +35,6 @@ public class SlaRulesMapper {
                 .toList();
     }
 
-    /**
-     * Convert single SLA rule using priority name
-     */
     public static SlaRulesResponse<String> toResponseWithPriorityName(
             SlaRules rules,
             String priorityName
@@ -81,9 +62,6 @@ public class SlaRulesMapper {
                 .build();
     }
 
-    /**
-     * Convert single SLA rule using priority ID (internal/system use)
-     */
     public static SlaRulesResponse<Long> toResponseWithPriorityId(
             SlaRules rules
     ) {

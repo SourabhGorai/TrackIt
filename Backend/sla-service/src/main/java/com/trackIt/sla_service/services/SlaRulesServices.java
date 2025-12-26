@@ -106,7 +106,7 @@ public class SlaRulesServices {
                 return List.of();
             }
 
-            // 2️⃣ Fetch unique priority IDs
+            // 2️⃣ Fetch unique priority IDs with null-safe handling
             Map<Long, String> priorityMap =
                     rulesList.stream()
                             .map(SlaRules::getPriorityId)
@@ -114,11 +114,18 @@ public class SlaRulesServices {
                             .collect(Collectors.toMap(
                                     priorityId -> priorityId,
                                     priorityId -> {
-                                        PriorityResponse response =
-                                                independentServiceClient.validatePriority(priorityId);
-                                        return response != null
-                                                ? response.getPriorityLevel()
-                                                : "UNKNOWN";
+                                        try {
+                                            PriorityResponse response =
+                                                    independentServiceClient.validatePriority(priorityId);
+
+                                            if (response != null && response.getPriorityLevel() != null) {
+                                                return response.getPriorityLevel();
+                                            }
+                                            return "UNKNOWN";
+                                        } catch (Exception e) {
+                                            log.warn("Failed to fetch priority for ID: {}", priorityId, e);
+                                            return "UNKNOWN";
+                                        }
                                     }
                             ));
 
@@ -128,33 +135,6 @@ public class SlaRulesServices {
         } catch (Exception e) {
             log.error("Failed to fetch SLA rules", e);
             throw new ServiceException("Failed to fetch SLA rules", e);
-        }
-    }
-
-    @Cacheable(value = "ruleById", key = "#slaRuleId")
-    @Transactional(readOnly = true)
-    public SlaRulesResponse<String> getBySlaRuleId(Long slaRuleId) {
-
-        log.info("Fetching SLA rule by ID: {}", slaRuleId);
-
-        try {
-            SlaRules rule = slaRulesRepository.findById(slaRuleId)
-                    .orElseThrow(() ->
-                            new ServiceException("SLA rule not found with ID: " + slaRuleId)
-                    );
-
-            PriorityResponse priority =
-                    independentServiceClient.validatePriority(rule.getPriorityId());
-
-            String priorityName = priority != null
-                    ? priority.getPriorityLevel()
-                    : "UNKNOWN";
-
-            return SlaRulesMapper.toResponseWithPriorityName(rule, priorityName);
-
-        } catch (Exception e) {
-            log.error("Failed to fetch SLA rule with ID: {}", slaRuleId, e);
-            throw new ServiceException("Failed to fetch SLA rule", e);
         }
     }
 
@@ -172,7 +152,7 @@ public class SlaRulesServices {
                 return List.of();
             }
 
-            // Build priority map
+            // Build priority map with null-safe handling
             Map<Long, String> priorityMap =
                     rules.stream()
                             .map(SlaRules::getPriorityId)
@@ -180,11 +160,18 @@ public class SlaRulesServices {
                             .collect(Collectors.toMap(
                                     priorityId -> priorityId,
                                     priorityId -> {
-                                        PriorityResponse response =
-                                                independentServiceClient.validatePriority(priorityId);
-                                        return response != null
-                                                ? response.getPriorityLevel()
-                                                : "UNKNOWN";
+                                        try {
+                                            PriorityResponse response =
+                                                    independentServiceClient.validatePriority(priorityId);
+
+                                            if (response != null && response.getPriorityLevel() != null) {
+                                                return response.getPriorityLevel();
+                                            }
+                                            return "UNKNOWN";
+                                        } catch (Exception e) {
+                                            log.warn("Failed to fetch priority for ID: {}", priorityId, e);
+                                            return "UNKNOWN";
+                                        }
                                     }
                             ));
 
@@ -193,6 +180,39 @@ public class SlaRulesServices {
         } catch (Exception e) {
             log.error("Failed to fetch SLA rules for Service ID: {}", serviceId, e);
             throw new ServiceException("Failed to fetch SLA rules by service ID", e);
+        }
+    }
+
+    @Cacheable(value = "ruleById", key = "#slaRuleId")
+    @Transactional(readOnly = true)
+    public SlaRulesResponse<String> getBySlaRuleId(Long slaRuleId) {
+
+        log.info("Fetching SLA rule by ID: {}", slaRuleId);
+
+        try {
+            SlaRules rule = slaRulesRepository.findById(slaRuleId)
+                    .orElseThrow(() ->
+                            new ServiceException("SLA rule not found with ID: " + slaRuleId)
+                    );
+
+            String priorityName = "UNKNOWN";
+
+            try {
+                PriorityResponse priority =
+                        independentServiceClient.validatePriority(rule.getPriorityId());
+
+                if (priority != null && priority.getPriorityLevel() != null) {
+                    priorityName = priority.getPriorityLevel();
+                }
+            } catch (Exception e) {
+                log.warn("Failed to fetch priority for ID: {}", rule.getPriorityId(), e);
+            }
+
+            return SlaRulesMapper.toResponseWithPriorityName(rule, priorityName);
+
+        } catch (Exception e) {
+            log.error("Failed to fetch SLA rule with ID: {}", slaRuleId, e);
+            throw new ServiceException("Failed to fetch SLA rule", e);
         }
     }
 
@@ -292,9 +312,8 @@ public class SlaRulesServices {
         }
     }
 
-
-    @Transactional
     @Cacheable(value = "ruleByPriorityId", key = "#priorityId")
+    @Transactional(readOnly = true)
     public List<SlaRulesPriorityResponse> getByPriority(Long priorityId) {
 
         log.info("Attempting to list services with priority ID: {}", priorityId);
@@ -307,12 +326,12 @@ public class SlaRulesServices {
             return SlaRulesMapper.toSlaPriorityResponseList(list);
 
         } catch (Exception e) {
-            log.info("Failed to fetch list with error id: {}", priorityId);
+            log.error("Failed to fetch list with priority ID: {}", priorityId, e);
             throw new ServiceException(String.format(
-                    "Failed to fetch list with error id: %d", priorityId),
+                    "Failed to fetch list with priority ID: %d", priorityId),
                     e
             );
         }
-
     }
+
 }
