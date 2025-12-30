@@ -1,6 +1,7 @@
 package com.trackIt.user_service2.mapper;
 
 import com.trackIt.user_service2.dto.UserResponse;
+import com.trackIt.user_service2.dto.UserResponsePublic;
 import com.trackIt.user_service2.model.Users;
 import org.springframework.stereotype.Component;
 
@@ -10,6 +11,8 @@ import java.time.format.DateTimeFormatter;
 public class UserMapper {
 
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm:ss");
+
+
 
     public static UserResponse toResponse(Users user) {
         if (user == null) {
@@ -37,5 +40,22 @@ public class UserMapper {
             response.setCompanyName(companyName);
         }
         return response;
+    }
+
+    public static UserResponsePublic toResponseWithPublicView(Users user, String roleName, String companyName) {
+
+        if (user == null) return null;
+
+        return UserResponsePublic.builder()
+                .id(user.getId())
+                .employeeId(user.getEmployeeId())
+                .name(user.getName())
+                .email(user.getEmail())
+                .roleId(user.getRoleId())
+                .roleName(roleName)
+                .companyId(user.getCompanyId())
+                .companyName(companyName)
+                .build();
+
     }
 }

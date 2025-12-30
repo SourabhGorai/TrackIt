@@ -1,8 +1,8 @@
 package com.trackIt.user_service2.controller;
 
-import com.trackIt.user_service2.dto.ApiResponse;
-import com.trackIt.user_service2.dto.UserResponse;
+import com.trackIt.user_service2.dto.*;
 import com.trackIt.user_service2.service.UserService;
+import jakarta.ws.rs.Path;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -44,6 +44,46 @@ public class UserController {
         return ResponseEntity.ok(
                 ApiResponse.success("User retrieved successfully", response)
         );
+    }
+
+    @GetMapping("/public/{userId}")
+    public ResponseEntity<ApiResponse<UserResponsePublic>> getUserByIdPublic(
+            @PathVariable Long userId) {
+        log.info("REST request to get user in public view by ID: {}", userId);
+
+        UserResponsePublic response = userService.getUserByIdPublic(userId);
+
+        return ResponseEntity.ok(
+                ApiResponse.success("User retrieved successfully", response)
+        );
+    }
+
+    @GetMapping("/public/employeeId/{employeeId}")
+    public ResponseEntity<ApiResponse<UserResponsePublic>> getUserByEmployeeIdPublic(
+            @PathVariable String employeeId) {
+        log.info("REST request to get user in public view by Employee ID: {}", employeeId);
+
+        UserResponsePublic response = userService.getUserByEmployeeIdPublic(employeeId);
+
+        return ResponseEntity.ok(
+                ApiResponse.success("User retrieved successfully", response)
+        );
+    }
+
+    @GetMapping("/public/company/auto")
+    public ResponseEntity<ApiResponse<List<UserResponsePublic>>> getUserByCompanyIDAutomatically(
+            @RequestHeader("X-User-Id") Long userId
+    ) {
+
+        log.info("REST received to fetch all the employees of the same company as the user");
+
+        List<UserResponsePublic> response = userService.getAllUsersByCompanyIdAuto(userId);
+
+        return ResponseEntity.ok(ApiResponse.success(
+                String.format("Fetched list of size: %d", response.size()),
+                response
+        ));
+
     }
 
     @GetMapping
@@ -109,5 +149,45 @@ public class UserController {
         return ResponseEntity.ok(
                 ApiResponse.success("User restored successfully")
         );
+    }
+
+    @GetMapping("/getName/{userId}")
+    public String getName(@PathVariable Long userId){
+        log.info("REST request to get name with user ID: {}", userId);
+        return userService.getName(userId);
+    }
+
+    @PutMapping("/pm")
+    public ResponseEntity<ApiResponse<ProviderManagerResponse>> updateShifts(
+            @RequestHeader("X-User-Id") Long userId,
+            @RequestBody ProviderManagerRequest request
+    ) {
+
+        log.info("REST request to update shifts with user ID: {}", userId);
+
+        ProviderManagerResponse response = userService.updateShifts(userId, request);
+
+        return ResponseEntity.ok(ApiResponse.success(
+                String.format("Shifts updated Successfully for user with ID: %s", userId.toString()),
+                response
+        ));
+
+    }
+
+    @PutMapping("/onCall")
+    public ResponseEntity<ApiResponse<?>> changeOnCallStatus(
+            @RequestHeader("X-User-Id") Long userId
+    ) {
+
+        log.info("REST request to update On-Call status for user ID: {}", userId);
+
+        Boolean status = userService.updateOnCallStatus(userId);
+
+        String resp = status == true ? "Active" : "Non-Active";
+
+        return ResponseEntity.ok(ApiResponse.success(
+                String.format("Successfully changed On-Call status to: %s", resp)
+        ));
+
     }
 }

@@ -30,6 +30,6 @@ public class Roles {
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
-    // ROLES: ADMIN, MANAGER, REPORTER, SUPPORT_ENGINEER
+    // ROLES: ADMIN, MANAGER, REPORTER, SUPPORT_ENGINEER, PROVIDER_MANAGER
 
 }

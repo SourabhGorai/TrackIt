@@ -1,14 +1,16 @@
 package com.trackIt.user_service2.service;
 import com.trackIt.user_service2.client.IndependentServiceClient;
-import com.trackIt.user_service2.dto.CompanyResponse;
-import com.trackIt.user_service2.dto.RoleResponse;
-import com.trackIt.user_service2.dto.UserResponse;
+import com.trackIt.user_service2.dto.*;
 import com.trackIt.user_service2.exception.UserNotFoundException;
 import com.trackIt.user_service2.mapper.UserMapper;
+import com.trackIt.user_service2.model.ProviderManagers;
 import com.trackIt.user_service2.model.Users;
+import com.trackIt.user_service2.repository.ProviderManagerRepository;
 import com.trackIt.user_service2.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -16,6 +18,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -25,6 +28,7 @@ public class UserService implements UserDetailsService {
 
     private final UserRepository userRepository;
     private final IndependentServiceClient independentServiceClient;
+    private final ProviderManagerRepository providerManagerRepository;
 
     @Override
     @Transactional(readOnly = true)
@@ -78,6 +82,71 @@ public class UserService implements UserDetailsService {
                 company != null ? company.getCompanyName() : null
         );
     }
+
+    public UserResponsePublic getUserByIdPublic(Long userId) {
+
+        log.info("Fetching user by Id: {}, in public view", userId);
+
+        Users user = userRepository.findById(userId)
+                .orElseThrow(() -> new UserNotFoundException("User not found with ID: " + userId));
+
+        RoleResponse role = independentServiceClient.validateRole(user.getRoleId());
+        CompanyResponse company = independentServiceClient.validateCompany(user.getCompanyId());
+
+        return UserMapper.toResponseWithPublicView(
+                user,
+                role != null ? role.getRole() : null,
+                company != null ? company.getCompanyName() : null
+        );
+
+    }
+
+    public UserResponsePublic getUserByEmployeeIdPublic(String employeeId) {
+
+        log.info("Fetching user by employee Id: {}, in public view", employeeId);
+
+        Users user = userRepository.findByEmployeeId(employeeId)
+                .orElseThrow(() -> new UserNotFoundException(
+                        "User not found with employee ID: " + employeeId)
+                );
+
+        RoleResponse role = independentServiceClient.validateRole(user.getRoleId());
+        CompanyResponse company = independentServiceClient.validateCompany(user.getCompanyId());
+
+        return UserMapper.toResponseWithPublicView(
+                user,
+                role != null ? role.getRole() : null,
+                company != null ? company.getCompanyName() : null
+        );
+    }
+
+    public List<UserResponsePublic> getAllUsersByCompanyIdAuto(Long userId) {
+
+        log.info("Fetching active users for company of userId: {}", userId);
+
+        Users requester = userRepository.findById(userId)
+                .orElseThrow(() -> new UserNotFoundException(
+                        "User not found with ID: " + userId));
+
+        Long companyId = requester.getCompanyId();
+
+        List<Users> users = userRepository
+                .findByCompanyIdAndIsDeletedFalseAndIsAccountLockedFalse(companyId);
+
+        return users.stream()
+                .map(user -> {
+                    RoleResponse role = independentServiceClient.validateRole(user.getRoleId());
+                    CompanyResponse company = independentServiceClient.validateCompany(user.getCompanyId());
+
+                    return UserMapper.toResponseWithPublicView(
+                            user,
+                            role != null ? role.getRole() : null,
+                            company != null ? company.getCompanyName() : null
+                    );
+                })
+                .collect(Collectors.toList());
+    }
+
 
     @Transactional(readOnly = true)
     public List<UserResponse> getAllUsers() {
@@ -147,5 +216,79 @@ public class UserService implements UserDetailsService {
         userRepository.save(user);
 
         log.info("User restored successfully with ID: {}", userId);
+    }
+
+    public String getName(Long userId) {
+        Users user = userRepository.findById(userId).orElseThrow(() ->
+                new UserNotFoundException(String.format("user with Id: %d not found", userId)));
+
+        return user.getName();
+    }
+
+    @Transactional
+    public ProviderManagerResponse updateShifts(Long userId,
+                                                ProviderManagerRequest request) {
+
+        log.info("Updating shift timings for provider manager userId: {}", userId);
+
+        Users user = userRepository.findById(userId)
+                .orElseThrow(() ->
+                        new UserNotFoundException("User not found with ID: " + userId));
+
+        ProviderManagers providerManager = providerManagerRepository
+                .findByUser_Id(userId)
+                .orElseThrow(() ->
+                        new UserNotFoundException(
+                                "Provider Manager entry not found for user ID: " + userId));
+
+        if (request.getShiftEnd().isBefore(request.getShiftStart())) {
+            throw new IllegalArgumentException("Shift end time must be after shift start time");
+        }
+
+        providerManager.setShiftStart(request.getShiftStart());
+        providerManager.setShiftEnd(request.getShiftEnd());
+
+        ProviderManagers saved = providerManagerRepository.save(providerManager);
+
+        return ProviderManagerResponse.builder()
+                .id(saved.getId())
+                .employeeId(user.getEmployeeId())
+                .employeeName(user.getName())
+                .shiftStart(saved.getShiftStart() != null
+                        ? saved.getShiftStart().toString()
+                        : null)
+                .shiftEnd(saved.getShiftEnd() != null
+                        ? saved.getShiftEnd().toString()
+                        : null)
+                .isActive(!user.getIsAccountLocked())
+                .onCall(saved.getOnCall())
+                .build();
+    }
+
+
+    @Transactional
+    public Boolean updateOnCallStatus(Long userId) {
+
+        log.info("Attempting to change On-Call status of Provider manager with Id: {}", userId);
+
+        ProviderManagers pm = providerManagerRepository.findByUser_Id(userId).orElseThrow(
+                () -> new UserNotFoundException("Provider Manager details not found")
+        );
+
+        try{
+
+            if(pm.getOnCall()){
+                pm.deactivateOnCall();
+            }else{
+                pm.activateOnCall();
+            }
+
+            ProviderManagers saved = providerManagerRepository.save(pm);
+            return saved.getOnCall();
+
+        }catch(Exception e){
+            throw new RuntimeException();
+        }
+
     }
 }

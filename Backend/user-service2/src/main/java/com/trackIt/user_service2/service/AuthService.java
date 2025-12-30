@@ -4,7 +4,9 @@ import com.trackIt.user_service2.client.IndependentServiceClient;
 import com.trackIt.user_service2.dto.*;
 import com.trackIt.user_service2.exception.*;
 import com.trackIt.user_service2.mapper.UserMapper;
+import com.trackIt.user_service2.model.ProviderManagers;
 import com.trackIt.user_service2.model.Users;
+import com.trackIt.user_service2.repository.ProviderManagerRepository;
 import com.trackIt.user_service2.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -16,6 +18,8 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -30,6 +34,7 @@ public class AuthService {
     private final IndependentServiceClient independentServiceClient;
     private final AuthenticationManager authenticationManager;
     private final UserDetailsService userDetailsService;
+    private final ProviderManagerRepository providerManagerRepository;
 
     @Transactional
     public UserResponse register(RegisterRequest request) {
@@ -68,10 +73,21 @@ public class AuthService {
         Users savedUser = userRepository.save(user);
         log.info("User registered successfully with ID: {}", savedUser.getId());
 
+        if ("PROVIDER_MANAGER".equals(role.getRole())) {
+
+            ProviderManagers pm = ProviderManagers.builder()
+                    .user(savedUser)
+                    .onCall(false)
+                    .build();
+
+            providerManagerRepository.save(pm);
+        }
+
         otpService.createAndSendOtp(savedUser.getEmail(), savedUser.getName());
 
         return UserMapper.toResponseWithDetails(savedUser, role.getRole(), company.getCompanyName());
     }
+
 
     @Transactional
     public void verifyEmail(VerifyOtpRequest request) {

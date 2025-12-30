@@ -21,13 +21,14 @@
         </processorPath>
         <module name="independent-services" />
       </profile>
-      <profile name="Annotation profile for sla-service" enabled="true">
+      <profile name="Annotation profile for incidents" enabled="true">
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
         <processorPath useClasspath="false">
           <entry name="$MAVEN_REPOSITORY$/org/projectlombok/lombok/1.18.42/lombok-1.18.42.jar" />
         </processorPath>
+        <module name="incidents" />
         <module name="api-gateway" />
         <module name="sla-service" />
       </profile>
@@ -37,6 +38,7 @@
     <option name="ADDITIONAL_OPTIONS_OVERRIDE">
       <module name="api-gateway" options="-parameters" />
       <module name="eureka-server" options="-parameters" />
+      <module name="incidents" options="-parameters" />
       <module name="independent-services" options="-parameters" />
       <module name="sla-service" options="-parameters" />
       <module name="user-service" options="-parameters" />
