@@ -1,6 +1,7 @@
 package com.trackIt.user_service2.service;
 import com.trackIt.user_service2.client.IndependentServiceClient;
-import com.trackIt.user_service2.dto.*;
+import com.trackIt.user_service2.dto.request.ProviderManagerRequest;
+import com.trackIt.user_service2.dto.response.*;
 import com.trackIt.user_service2.exception.UserNotFoundException;
 import com.trackIt.user_service2.mapper.UserMapper;
 import com.trackIt.user_service2.model.ProviderManagers;
@@ -9,8 +10,6 @@ import com.trackIt.user_service2.repository.ProviderManagerRepository;
 import com.trackIt.user_service2.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -18,7 +17,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service

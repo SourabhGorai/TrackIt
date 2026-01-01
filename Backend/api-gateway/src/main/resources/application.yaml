@@ -63,6 +63,14 @@ spring:
               filters:
                 - AuthenticationFilter
 
+            # ---------- INCIDENT SERVICE (PROTECTED) ------------
+            - id: incident-service-protected
+              uri: lb://INCIDENTS
+              predicates:
+                - Path=/api/**
+              filters:
+                - AuthenticationFilter
+
           # ================= CORS =================
           globalcors:
             cors-configurations:

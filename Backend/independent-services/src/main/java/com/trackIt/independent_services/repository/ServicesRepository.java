@@ -3,6 +3,7 @@ package com.trackIt.independent_services.repository;
 import com.trackIt.independent_services.model.Services;
 import com.trackIt.independent_services.model.Companies;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -36,4 +37,13 @@ public interface ServicesRepository extends JpaRepository<Services, Long> {
             Long clientCompanyId,
             Long providerCompanyId
     );
+
+    @Query("""
+        SELECT s.serviceId
+        FROM Services s
+        WHERE s.clientCompany.id = :companyId
+           OR s.providerCompany.id = :companyId
+    """)
+    List<Long> findServiceIdsByCompany(Long companyId);
+
 }

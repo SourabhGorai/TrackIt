@@ -1,12 +1,18 @@
 package com.trackIt.user_service2.controller;
 
 import com.trackIt.user_service2.dto.*;
+import com.trackIt.user_service2.dto.request.ProviderManagerRequest;
+import com.trackIt.user_service2.dto.response.ProviderManagerResponse;
+import com.trackIt.user_service2.dto.response.UserResponse;
+import com.trackIt.user_service2.dto.response.UserResponsePublic;
+import com.trackIt.user_service2.service.JwtService;
 import com.trackIt.user_service2.service.UserService;
-import jakarta.ws.rs.Path;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
@@ -19,7 +25,10 @@ import java.util.List;
 @Slf4j
 public class UserController {
 
+    @Value("${jwt.secret}")
+    private String secretKey;
     private final UserService userService;
+    private final JwtService jwtService;
 
     @GetMapping("/profile")
     public ResponseEntity<ApiResponse<UserResponse>> getUserProfile(
@@ -72,8 +81,15 @@ public class UserController {
 
     @GetMapping("/public/company/auto")
     public ResponseEntity<ApiResponse<List<UserResponsePublic>>> getUserByCompanyIDAutomatically(
-            @RequestHeader("X-User-Id") Long userId
+            @RequestHeader("Authorization") String authHeader
     ) {
+        // Extract JWT token
+        String token = authHeader.substring(7); // Remove "Bearer " prefix
+
+        // Extract user details from token
+        Long userId = jwtService.extractUserId(token);
+        String username = jwtService.extractUsername(token);
+        String role = jwtService.extractRole(token);
 
         log.info("REST received to fetch all the employees of the same company as the user");
 
@@ -152,32 +168,47 @@ public class UserController {
     }
 
     @GetMapping("/getName/{userId}")
-    public String getName(@PathVariable Long userId){
+    public String getName(@PathVariable Long userId) {
         log.info("REST request to get name with user ID: {}", userId);
         return userService.getName(userId);
     }
 
     @PutMapping("/pm")
     public ResponseEntity<ApiResponse<ProviderManagerResponse>> updateShifts(
-            @RequestHeader("X-User-Id") Long userId,
+            @RequestHeader("Authorization") String authHeader,
             @RequestBody ProviderManagerRequest request
     ) {
+        // Extract JWT token
+        String token = authHeader.substring(7); // Remove "Bearer " prefix
 
-        log.info("REST request to update shifts with user ID: {}", userId);
+        // Extract user details from token
+        Long userId = jwtService.extractUserId(token);
+        String username = jwtService.extractUsername(token);
+        String role = jwtService.extractRole(token);
+
+        log.info("REST request to update shifts - UserId: {}, Username: {}, Role: {}",
+                userId, username, role);
 
         ProviderManagerResponse response = userService.updateShifts(userId, request);
 
         return ResponseEntity.ok(ApiResponse.success(
-                String.format("Shifts updated Successfully for user with ID: %s", userId.toString()),
+                String.format("Shifts updated successfully for user with ID: %s", userId),
                 response
         ));
-
     }
 
     @PutMapping("/onCall")
     public ResponseEntity<ApiResponse<?>> changeOnCallStatus(
-            @RequestHeader("X-User-Id") Long userId
+            @RequestHeader("Authorization") String authHeader
     ) {
+
+        // Extract JWT token
+        String token = authHeader.substring(7); // Remove "Bearer " prefix
+
+        // Extract user details from token
+        Long userId = jwtService.extractUserId(token);
+        String username = jwtService.extractUsername(token);
+        String role = jwtService.extractRole(token);
 
         log.info("REST request to update On-Call status for user ID: {}", userId);
 
@@ -190,4 +221,11 @@ public class UserController {
         ));
 
     }
+
+    // Need to create a method to fetch the complete details of all the PROVIDER_MANAGER.
+    @GetMapping("/details/providerManager")
+    public ResponseEntity<ApiResponse<?>> getProviderManager(){
+        
+    }
+    
 }

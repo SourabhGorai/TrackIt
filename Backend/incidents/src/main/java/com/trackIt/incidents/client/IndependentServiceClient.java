@@ -16,6 +16,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
 import java.time.Duration;
+import java.util.List;
 
 @Component
 @RequiredArgsConstructor
@@ -135,6 +136,54 @@ public class IndependentServiceClient {
             log.error("Failed to fetch priority data with ID: {}", priorityId, e);
             throw new ExternalServiceException(
                     "Unable to fetch priority data. Please try again later", e);
+        }
+    }
+
+    public List<Long> getServiceIdList(Long compId) {
+
+        log.info("Fetching service ID list for company ID: {}", compId);
+
+        try {
+            ApiResponse<List<Long>> response = webClientBuilder.build()
+                    .get()
+                    .uri(independentServiceUrl + "/serviceList/{compId}", compId)
+                    .retrieve()
+                    .onStatus(
+                            status -> status.is4xxClientError() || status.is5xxServerError(),
+                            clientResponse -> {
+                                log.error(
+                                        "HTTP error {} while fetching service IDs for company ID: {}",
+                                        clientResponse.statusCode(), compId
+                                );
+                                return clientResponse
+                                        .bodyToMono(String.class)
+                                        .flatMap(body ->
+                                                Mono.error(new ExternalServiceException(
+                                                        "Independent service error: " + body))
+                                        );
+                            }
+                    )
+                    .bodyToMono(new ParameterizedTypeReference<ApiResponse<List<Long>>>() {})
+                    .timeout(Duration.ofSeconds(5))
+                    .block();
+
+            if (response != null && Boolean.TRUE.equals(response.getSuccess())
+                    && response.getData() != null) {
+
+                log.info("Fetched {} service IDs for company ID: {}",
+                        response.getData().size(), compId);
+
+                return response.getData();
+            }
+
+            log.warn("Empty response received while fetching service IDs for company ID: {}", compId);
+            return List.of();
+
+        } catch (Exception e) {
+            log.error("Failed to fetch service IDs for company ID: {}", compId, e);
+            throw new ExternalServiceException(
+                    "Unable to fetch service IDs. Please try again later", e
+            );
         }
     }
 }

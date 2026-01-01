@@ -18,6 +18,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @Slf4j
@@ -286,6 +287,21 @@ public class ServicesService {
             log.error("Failed to update service with ID: {}", serviceId, e);
             throw new ServiceException("Failed to update service", e);
         }
+    }
+
+    public List<Long> getAllServiceIdForCompany(Long compId) {
+
+        log.info("Fetching service IDs for company ID: {}", compId);
+
+        if (!companyRepository.existsById(compId)) {
+            throw new NotFoundException("Company", compId.toString());
+        }
+
+        List<Long> serviceIds = servicesRepository.findServiceIdsByCompany(compId);
+
+        log.info("Found {} services for company ID {}", serviceIds.size(), compId);
+
+        return serviceIds;
     }
 
 }

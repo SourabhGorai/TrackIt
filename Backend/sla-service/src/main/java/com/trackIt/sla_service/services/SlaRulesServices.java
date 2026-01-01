@@ -334,4 +334,23 @@ public class SlaRulesServices {
         }
     }
 
+    public PromiseResponse getPromisedTimes(Long serviceId, Long priorityId) {
+
+        log.info("Attempting to get the times");
+
+        try {
+
+            SlaRules slaRules = slaRulesRepository
+                    .findByServiceIdAndPriorityIdAndIsActiveTrue(serviceId, priorityId);
+
+            return PromiseResponse.builder()
+                    .response_time_mins(slaRules.getResponse_time_mins())
+                    .resolution_time_mins(slaRules.getResolution_time_mins())
+                    .build();
+
+        } catch (Exception e) {
+            throw new ServiceException("Failed to fetch times");
+        }
+
+    }
 }

@@ -1,14 +1,13 @@
 package com.trackIt.user_service2.client;
 
-import com.trackIt.user_service2.dto.CompanyResponse;
-import com.trackIt.user_service2.dto.RoleResponse;
+import com.trackIt.user_service2.dto.response.CompanyResponse;
+import com.trackIt.user_service2.dto.response.RoleResponse;
 import com.trackIt.user_service2.exception.ExternalServiceException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
-import reactor.core.publisher.Mono;
 
 import java.time.Duration;
 

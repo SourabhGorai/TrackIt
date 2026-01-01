@@ -129,9 +129,8 @@ public class GatewayConfig {
                         .uri("lb://USER-SERVICE2"))
 
                 // ========================================
-                // CORRECTED SLA SERVICE GATEWAY ROUTES
+                //       SLA SERVICE GATEWAY ROUTES
                 // ========================================
-                // Add these routes to your GatewayConfig.customRouteLocator() method
 
                 // ---------- ADMIN ONLY ROUTES (SLA) ----------
                 .route("admin-sla-delete", r -> r

@@ -22,7 +22,12 @@ public class PreciseResponse {
     private String expectedResponseTime;
     private String expectedResolutionTime;
     private Status status;
+    private String reportedByEmpId;    // Each ID will be an employee ID
     private String reportedBy;
+    private String managerAllocatedEmpId;
+    private String managerAllocated;
+    private String supporterAssignedEmpId;
+    private String supporterAssigned;
     private String reportedAt;
     private String resolvedAt;
 

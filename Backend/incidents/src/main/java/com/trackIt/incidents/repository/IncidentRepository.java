@@ -4,7 +4,7 @@ import com.trackIt.incidents.model.Incident;
 import com.trackIt.incidents.model.Status;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
-
+import java.util.List;
 import java.time.LocalDateTime;
 import java.util.Optional;
 
@@ -18,5 +18,7 @@ public interface IncidentRepository extends JpaRepository<Incident, Long> {
             Status status,
             LocalDateTime afterTime
     );
+
+    List<Incident> findByServiceIdIn(List<Long> serviceIds);
 
 }

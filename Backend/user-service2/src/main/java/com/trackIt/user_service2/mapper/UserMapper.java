@@ -1,7 +1,7 @@
 package com.trackIt.user_service2.mapper;
 
-import com.trackIt.user_service2.dto.UserResponse;
-import com.trackIt.user_service2.dto.UserResponsePublic;
+import com.trackIt.user_service2.dto.response.UserResponse;
+import com.trackIt.user_service2.dto.response.UserResponsePublic;
 import com.trackIt.user_service2.model.Users;
 import org.springframework.stereotype.Component;
 

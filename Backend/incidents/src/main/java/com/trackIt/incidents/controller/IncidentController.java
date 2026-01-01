@@ -5,6 +5,7 @@ import com.trackIt.incidents.dto.request.AssignSupportEngineerRequest;
 import com.trackIt.incidents.dto.request.ReporterRequest;
 import com.trackIt.incidents.dto.request.SupporterRequest;
 import com.trackIt.incidents.dto.response.IncidentResponse;
+import com.trackIt.incidents.dto.response.PreciseResponse;
 import com.trackIt.incidents.service.IncidentService;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -120,6 +121,22 @@ public class IncidentController {
                 incident
         ));
 
+    }
+
+    @GetMapping("/preciseResponse/{compId}")
+    public ResponseEntity<ApiResponse<List<PreciseResponse>>> getPreciseResponseByCompanyId(
+            @PathVariable Long compId
+    ) {
+
+        log.info("REST request received to fetch precise details of incidents for company ID: {}",
+                compId);
+
+        List<PreciseResponse> resp = incidentService.getIncidentsByCompanyId(compId);
+
+        return ResponseEntity.ok(ApiResponse.success(
+                String.format("Fetched list of size: %d", resp.size()),
+                resp
+        ));
     }
 
 

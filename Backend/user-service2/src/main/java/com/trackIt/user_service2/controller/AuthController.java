@@ -1,6 +1,9 @@
 package com.trackIt.user_service2.controller;
 
 import com.trackIt.user_service2.dto.*;
+import com.trackIt.user_service2.dto.request.*;
+import com.trackIt.user_service2.dto.response.AuthResponse;
+import com.trackIt.user_service2.dto.response.UserResponse;
 import com.trackIt.user_service2.service.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;

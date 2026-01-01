@@ -134,5 +134,18 @@ public class ServicesController {
         );
     }
 
+    @GetMapping("/serviceList/{compId}")
+    public ResponseEntity<ApiResponse<List<Long>>> getServiceIdList (@PathVariable Long compId) {
+
+        log.info("REST received to get serviceId list with company ID: {}", compId);
+
+        List<Long> list = servicesService.getAllServiceIdForCompany(compId);
+
+        return ResponseEntity.ok(ApiResponse.success(
+                String.format("Fetched list with size: %d ", list.size()),
+                list
+        ));
+
+    }
 
 }

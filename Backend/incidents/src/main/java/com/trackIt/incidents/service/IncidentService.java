@@ -1,6 +1,7 @@
 package com.trackIt.incidents.service;
 
 import com.trackIt.incidents.client.IndependentServiceClient;
+import com.trackIt.incidents.client.SlaServiceClient;
 import com.trackIt.incidents.client.UserServiceClient;
 import com.trackIt.incidents.dto.request.AssignSupportEngineerRequest;
 import com.trackIt.incidents.dto.request.ReporterRequest;
@@ -30,6 +31,7 @@ public class IncidentService {
     private final IncidentRepository incidentRepository;
     private final IndependentServiceClient independentServiceClient;
     private final UserServiceClient userServiceClient;
+    private final SlaServiceClient slaServiceClient;
 
 
     @Transactional
@@ -196,6 +198,13 @@ public class IncidentService {
             Incident incident = incidentOpt.get();
 
             incident.setStatus(status);
+
+            if(status == Status.RESOLVED){
+                incident.setResolvedAt(LocalDateTime.now());
+                // Kafka will send notification to reporter, provider_manager and support engineer
+                // that the issue is resolved.
+            }
+
             Incident saved = incidentRepository.save(incident);
 
             UserResponsePublic reporter = Optional
@@ -269,4 +278,38 @@ public class IncidentService {
                 assigned.getName());
     }
 
+    public List<PreciseResponse> getIncidentsByCompanyId(Long companyId) {
+
+        log.info("Fetching incidents for company ID: {}", companyId);
+
+        CompanyResponse company =
+                independentServiceClient.validateCompany(companyId);
+
+        if (company == null) {
+            throw new NotFoundException("Company", companyId.toString());
+        }
+
+        List<Long> serviceIds =
+                independentServiceClient.getServiceIdList(companyId);
+
+        if (serviceIds == null || serviceIds.isEmpty()) {
+            log.info("No services found for company ID: {}", companyId);
+            return List.of();
+        }
+
+        List<Incident> incidents =
+                incidentRepository.findByServiceIdIn(serviceIds);
+
+        if (incidents.isEmpty()) {
+            log.info("No incidents found for company ID: {}", companyId);
+            return List.of();
+        }
+
+        return IncidentMapper.toPreciseResponseList(
+                incidents,
+                userServiceClient,
+                independentServiceClient,
+                slaServiceClient
+        );
+    }
 }

@@ -115,4 +115,19 @@ public class SlaRulesController {
                 )
         );
     }
+
+    @GetMapping("/getTimes/{serviceId}/{priorityId}")
+    public ResponseEntity<ApiResponse<PromiseResponse>> getPromisedResponse(
+            @PathVariable Long serviceId,
+            @PathVariable Long priorityId
+    ) {
+
+        log.info("REST received to display promised time");
+        PromiseResponse resp = slaRulesServices.getPromisedTimes(serviceId, priorityId);
+
+        return ResponseEntity.ok(ApiResponse.success(
+                "Successfully fetched data", resp
+        ));
+
+    }
 }

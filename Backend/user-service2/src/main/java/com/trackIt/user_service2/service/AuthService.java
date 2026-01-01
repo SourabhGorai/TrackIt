@@ -1,7 +1,11 @@
 package com.trackIt.user_service2.service;
 
 import com.trackIt.user_service2.client.IndependentServiceClient;
-import com.trackIt.user_service2.dto.*;
+import com.trackIt.user_service2.dto.request.*;
+import com.trackIt.user_service2.dto.response.AuthResponse;
+import com.trackIt.user_service2.dto.response.CompanyResponse;
+import com.trackIt.user_service2.dto.response.RoleResponse;
+import com.trackIt.user_service2.dto.response.UserResponse;
 import com.trackIt.user_service2.exception.*;
 import com.trackIt.user_service2.mapper.UserMapper;
 import com.trackIt.user_service2.model.ProviderManagers;
@@ -18,8 +22,6 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor

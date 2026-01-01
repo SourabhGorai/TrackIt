@@ -44,7 +44,7 @@ public class RoleController {
 
     @GetMapping("/validate/{roleId}")
     public ResponseEntity<?> validateRole(@PathVariable Long roleId){
-        log.info("REST request received to get all the roles");
+        log.info("REST request to validate roleId");
         RolesResponse resp = roleService.validateRole(roleId);
         System.out.println(resp);
         return ResponseEntity.ok(resp);
@@ -59,7 +59,6 @@ public class RoleController {
         return ResponseEntity.ok(
                 ApiResponse.success(String.format("Deleted role: %s", role))
         );
-
     }
 
 
