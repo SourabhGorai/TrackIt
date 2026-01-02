@@ -81,6 +81,3 @@ eureka:
       defaultZone: ${EUREKA_SERVER:http://localhost:8761/eureka}
     fetch-registry: true
     register-with-eureka: true
-
-#    GOOGLE_CLIENT_ID=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;
-#    GOOGLE_CLIENT_SECRET=475476457196-lgdsl3qh0s4i0o0qa62vap89jtja2g8f.apps.googleusercontent.com;
