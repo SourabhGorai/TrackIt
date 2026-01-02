@@ -10,6 +10,7 @@ import com.trackIt.user_service2.repository.ProviderManagerRepository;
 import com.trackIt.user_service2.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.hibernate.service.spi.ServiceException;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -17,6 +18,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
@@ -143,6 +147,53 @@ public class UserService implements UserDetailsService {
                     );
                 })
                 .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public List<UserResponsePublic> getAllUsersByCompanyId(Long compId) {
+
+        log.info("Fetching active users for company: {}", compId);
+
+        CompanyResponse company = Optional
+                .ofNullable(independentServiceClient.validateCompany(compId))
+                .orElseThrow(() ->
+                        new ServiceException("Invalid companyId: " + compId)
+                );
+
+        log.info("Fetching active users for company: {}", company.getCompanyName());
+
+        List<Users> users = userRepository
+                .findByCompanyIdAndIsDeletedFalseAndIsAccountLockedFalse(compId);
+
+        if (users.isEmpty()) {
+            return List.of();
+        }
+
+        // 🔥 Collect distinct roleIds
+        List<Long> roleIds = users.stream()
+                .map(Users::getRoleId)
+                .distinct()
+                .toList();
+
+        // 🔥 ONE remote call instead of N
+        List<RoleResponse> roles =
+                independentServiceClient.validateRolesByIds(roleIds);
+
+        Map<Long, RoleResponse> roleMap =
+                roles.stream().collect(Collectors.toMap(
+                        RoleResponse::getRoleId,
+                        Function.identity()
+                ));
+
+        return users.stream()
+                .map(user -> UserMapper.toResponseWithPublicView(
+                        user,
+                        roleMap.get(user.getRoleId()) != null
+                                ? roleMap.get(user.getRoleId()).getRole()
+                                : null,
+                        company.getCompanyName()
+                ))
+                .toList();
     }
 
 
@@ -289,4 +340,101 @@ public class UserService implements UserDetailsService {
         }
 
     }
+
+    public ProviderManagerFullResponse getFullResponseForProviderManager(Long userId) {
+
+        log.info("Attempting to fetch user (PROVIDER_MANAGER) full details with ID: {}", userId);
+
+        Optional<Users> userOpt = userRepository.findById(userId);
+
+        if(userOpt.isEmpty()){
+            log.info("User does not exists");
+            throw new UserNotFoundException(String.format("User does not present with the ID: %s",
+                    userId.toString()));
+        }
+
+        ProviderManagers pm = providerManagerRepository.findByUser_Id(userId)
+                .orElseThrow(() -> new UserNotFoundException(
+                        String.format("User with ID: %s is not an PROVIDER_MANAGER",userId)
+                ));
+
+        Users user = userOpt.orElseThrow();
+
+        CompanyResponse company = Optional
+                .ofNullable(independentServiceClient.validateCompany(user.getCompanyId()))
+                .orElseThrow(() ->
+                        new ServiceException(
+                                "Invalid companyId: " + user.getCompanyId()
+                        )
+                );
+
+        RoleResponse role = Optional
+                .ofNullable(independentServiceClient.validateRole(user.getRoleId()))
+                .orElseThrow(() ->
+                        new ServiceException(
+                                "Invalid roleID: " + user.getRoleId()
+                        )
+                );
+
+        return UserMapper.toResponseFullPmInfo(user, company, role, pm);
+
+    }
+
+    public List<ProviderManagerFullResponse> getFullResponseForProviderManagerAll(Long compId) {
+
+        CompanyResponse company = Optional
+                .ofNullable(independentServiceClient.validateCompany(compId))
+                .orElseThrow(() ->
+                        new ServiceException("Invalid companyId: " + compId)
+                );
+
+        log.info(
+                "Attempting to fetch all PROVIDER_MANAGER responses for company: {}",
+                company.getCompanyName()
+        );
+
+        RoleResponse role = independentServiceClient.validateRoleByName("PROVIDER_MANAGER");
+
+        List<Users> users = userRepository
+                .findByCompanyIdAndRoleIdAndIsDeletedFalseAndIsAccountLockedFalse(
+                        compId, role.getRoleId()
+                );
+
+        if (users.isEmpty()) {
+            return List.of();
+        }
+
+        // 🔥 ONE DB call instead of N
+        List<ProviderManagers> providerManagers =
+                providerManagerRepository.findByUser_CompanyId(compId);
+
+        Map<Long, ProviderManagers> pmByUserId =
+                providerManagers.stream()
+                        .collect(Collectors.toMap(
+                                pm -> pm.getUser().getId(),
+                                Function.identity()
+                        ));
+
+        return users.stream()
+                .map(user -> {
+
+                    ProviderManagers pm = pmByUserId.get(user.getId());
+
+                    if (pm == null) {
+                        throw new UserNotFoundException(
+                                "User with ID " + user.getId() + " is not a PROVIDER_MANAGER"
+                        );
+                    }
+
+                    return UserMapper.toResponseFullPmInfo(
+                            user,
+                            company,
+                            role,
+                            pm
+                    );
+                })
+                .toList();
+    }
+
+
 }

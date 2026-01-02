@@ -13,6 +13,7 @@ import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import javax.management.relation.Role;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -52,6 +53,24 @@ public class RoleService {
 
     }
 
+    @Transactional(readOnly = true)
+    public List<RolesResponse> getList(List<Long> ids) {
+
+        log.info("Attempting to create role list for ids: {}", ids);
+
+        if (ids == null || ids.isEmpty()) {
+            return List.of();
+        }
+
+        List<Roles> roles = roleRepository.findAllById(ids);
+
+        if (roles.isEmpty()) {
+            return List.of();
+        }
+
+        return RoleMapper.toResponseList(roles);
+    }
+
     @Cacheable(value = "roles")
     @Transactional(readOnly = true)
     public List<RolesResponse> getAll() {
@@ -80,5 +99,24 @@ public class RoleService {
     public RolesResponse validateRole(Long roleId) {
         Roles role = roleRepository.findById(roleId).orElseThrow();
         return RoleMapper.toResponse(role);
+    }
+
+    public RolesResponse getRoleId(String name) {
+        log.info("Attempting to get the role Id");
+        String sanitizedName = RoleMapper.sanitizeRole(name);
+
+        try {
+
+            Roles role = roleRepository.findByRole(sanitizedName)
+                    .orElseThrow(() ->
+                            new ServiceException("Role not found: " + sanitizedName)
+                    );
+
+            return RoleMapper.toResponse(role);
+
+        } catch(Exception e){
+            log.info("Failed to validate role: {}", sanitizedName);
+            throw new ServiceException("Failed to delete role: "+sanitizedName, e);
+        }
     }
 }

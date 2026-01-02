@@ -20,7 +20,7 @@ public class RoleController {
     private final RoleService roleService;
 
     @PostMapping("/{role}")
-    public ResponseEntity<ApiResponse<Roles>> addRoles(@PathVariable String role){
+    public ResponseEntity<ApiResponse<Roles>> addRoles(@PathVariable String role) {
         log.info("REST request received to create role: {}", role);
 
         Roles response = roleService.addRole(role);
@@ -30,8 +30,20 @@ public class RoleController {
         );
     }
 
+    @PostMapping("/idList")
+    public ResponseEntity<ApiResponse<List<RolesResponse>>> getList(@RequestBody List<Long> ids){
+        log.info("REST received to fetch all the roles with id list");
+
+        List<RolesResponse> response = roleService.getList(ids);
+
+        return ResponseEntity.ok(ApiResponse.success(
+                String.format("Fetched list with size: %d", response.size()),
+                response
+        ));
+    }
+
     @GetMapping
-    public ResponseEntity<ApiResponse<List<RolesResponse>>> getAll(){
+    public ResponseEntity<ApiResponse<List<RolesResponse>>> getAll() {
         log.info("REST request received to get all the roles");
         List<RolesResponse> list = roleService.getAll();
 
@@ -43,15 +55,22 @@ public class RoleController {
     }
 
     @GetMapping("/validate/{roleId}")
-    public ResponseEntity<?> validateRole(@PathVariable Long roleId){
+    public ResponseEntity<?> validateRole(@PathVariable Long roleId) {
         log.info("REST request to validate roleId");
         RolesResponse resp = roleService.validateRole(roleId);
         System.out.println(resp);
         return ResponseEntity.ok(resp);
     }
 
+    @GetMapping("/validateByName/{name}")
+    public ResponseEntity<RolesResponse> validateByName(@PathVariable String name) {
+        log.info("REST received to validate roleId by name: {}", name);
+        RolesResponse resp = roleService.getRoleId(name);
+        return ResponseEntity.ok(resp);
+    }
+
     @DeleteMapping("/{role}")
-    public ResponseEntity<ApiResponse<?>> deleteRole(@PathVariable String role){
+    public ResponseEntity<ApiResponse<?>> deleteRole(@PathVariable String role) {
         log.info("REST received to delete role: {}", role);
         roleService.deleteRole(role);
         log.info("Deleted role: {}", role);
@@ -60,7 +79,6 @@ public class RoleController {
                 ApiResponse.success(String.format("Deleted role: %s", role))
         );
     }
-
 
 
 }

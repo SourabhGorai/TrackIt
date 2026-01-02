@@ -21,4 +21,9 @@ public interface UserRepository extends JpaRepository<Users, Long> {
 
     List<Users> findByCompanyIdAndIsDeletedFalseAndIsAccountLockedFalse(Long companyId);
 
+    List<Users> findByCompanyIdAndRoleIdAndIsDeletedFalseAndIsAccountLockedFalse(
+            Long compId, Long roleId);
+
+
+
 }

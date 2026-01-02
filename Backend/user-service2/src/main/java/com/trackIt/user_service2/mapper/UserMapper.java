@@ -1,7 +1,7 @@
 package com.trackIt.user_service2.mapper;
 
-import com.trackIt.user_service2.dto.response.UserResponse;
-import com.trackIt.user_service2.dto.response.UserResponsePublic;
+import com.trackIt.user_service2.dto.response.*;
+import com.trackIt.user_service2.model.ProviderManagers;
 import com.trackIt.user_service2.model.Users;
 import org.springframework.stereotype.Component;
 
@@ -10,7 +10,10 @@ import java.time.format.DateTimeFormatter;
 @Component
 public class UserMapper {
 
-    private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm:ss");
+    private static final DateTimeFormatter FORMATTER =
+            DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm:ss");
+    private static final DateTimeFormatter TIME_FORMATTER =
+            DateTimeFormatter.ofPattern("hh:mm a");
 
 
 
@@ -55,6 +58,38 @@ public class UserMapper {
                 .roleName(roleName)
                 .companyId(user.getCompanyId())
                 .companyName(companyName)
+                .build();
+
+    }
+
+
+    public static ProviderManagerFullResponse toResponseFullPmInfo(
+            Users user, CompanyResponse company, RoleResponse role, ProviderManagers pm
+    ) {
+
+        if(user == null || pm == null) return null;
+
+        return ProviderManagerFullResponse.builder()
+                .id(user.getId())
+                .employeeId(user.getEmployeeId())
+                .name(user.getName())
+                .email(user.getEmail())
+                .roleName(role.getRole())
+                .companyName(company.getCompanyName())
+                .isEmailVerified(user.getIsEmailVerified())
+                .isAccountLocked(user.getIsAccountLocked())
+                .shiftStart(
+                        pm.getShiftStart() != null
+                                ? pm.getShiftStart().format(TIME_FORMATTER)
+                                : null
+                )
+                .shiftEnd(
+                        pm.getShiftEnd() != null
+                                ? pm.getShiftEnd().format(TIME_FORMATTER)
+                                : null
+                )
+                .isActive(!user.getIsDeleted())
+                .onCall(pm.getOnCall())
                 .build();
 
     }

@@ -2,6 +2,7 @@ package com.trackIt.user_service2.controller;
 
 import com.trackIt.user_service2.dto.*;
 import com.trackIt.user_service2.dto.request.ProviderManagerRequest;
+import com.trackIt.user_service2.dto.response.ProviderManagerFullResponse;
 import com.trackIt.user_service2.dto.response.ProviderManagerResponse;
 import com.trackIt.user_service2.dto.response.UserResponse;
 import com.trackIt.user_service2.dto.response.UserResponsePublic;
@@ -94,6 +95,21 @@ public class UserController {
         log.info("REST received to fetch all the employees of the same company as the user");
 
         List<UserResponsePublic> response = userService.getAllUsersByCompanyIdAuto(userId);
+
+        return ResponseEntity.ok(ApiResponse.success(
+                String.format("Fetched list of size: %d", response.size()),
+                response
+        ));
+    }
+
+    @GetMapping("/public/company/{compId}")
+    public ResponseEntity<ApiResponse<List<UserResponsePublic>>> getUserByCompanyID(
+            @PathVariable Long compId
+    ) {
+
+        log.info("REST received to fetch all the employees of the same company for Id: {}", compId);
+
+        List<UserResponsePublic> response = userService.getAllUsersByCompanyId(compId);
 
         return ResponseEntity.ok(ApiResponse.success(
                 String.format("Fetched list of size: %d", response.size()),
@@ -207,8 +223,6 @@ public class UserController {
 
         // Extract user details from token
         Long userId = jwtService.extractUserId(token);
-        String username = jwtService.extractUsername(token);
-        String role = jwtService.extractRole(token);
 
         log.info("REST request to update On-Call status for user ID: {}", userId);
 
@@ -223,9 +237,37 @@ public class UserController {
     }
 
     // Need to create a method to fetch the complete details of all the PROVIDER_MANAGER.
-    @GetMapping("/details/providerManager")
-    public ResponseEntity<ApiResponse<?>> getProviderManager(){
-        
+    @GetMapping("/details/pmById/{userId}")
+    public ResponseEntity<ApiResponse<ProviderManagerFullResponse>> getProviderManagerById(
+            @PathVariable Long userId
+    ){
+
+        log.info("REST received to display the provider_manager contents");
+
+        ProviderManagerFullResponse response = userService.getFullResponseForProviderManager(userId);
+
+        return ResponseEntity.ok(ApiResponse.success(
+                String.format("Successfully retrieved full info about the user: %s",
+                        userId.toString()),
+                response
+        ));
+
+    }
+
+    @GetMapping("/details/pmByCompanyId/{compId}")
+    public ResponseEntity<ApiResponse<List<ProviderManagerFullResponse>>> getAllFullPm(
+            @PathVariable Long compId
+    ){
+        log.info("REST received to display all the provider_manager contents");
+
+        List<ProviderManagerFullResponse> response = userService
+                .getFullResponseForProviderManagerAll(compId);
+
+        return ResponseEntity.ok(ApiResponse.success(
+                String.format("Retrieved list with size: %d",
+                        response.size()),
+                response
+        ));
     }
     
 }
