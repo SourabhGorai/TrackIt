@@ -20,6 +20,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -199,7 +200,7 @@ public class IncidentService {
 
             incident.setStatus(status);
 
-            if(status == Status.RESOLVED){
+            if (status == Status.RESOLVED) {
                 incident.setResolvedAt(LocalDateTime.now());
                 // Kafka will send notification to reporter, provider_manager and support engineer
                 // that the issue is resolved.
@@ -232,7 +233,7 @@ public class IncidentService {
         }
     }
 
-
+    @Transactional
     public List<IncidentResponse> getAll() {
 
         log.info("Attempting to fetch all incidents");
@@ -251,6 +252,7 @@ public class IncidentService {
         );
     }
 
+    @Transactional
     public IncidentResponse getById(Long id) {
 
         log.info("Attempting to fetch incident with ID: {}", id);
@@ -278,6 +280,7 @@ public class IncidentService {
                 assigned.getName());
     }
 
+    @Transactional
     public List<PreciseResponse> getIncidentsByCompanyId(Long companyId) {
 
         log.info("Fetching incidents for company ID: {}", companyId);
@@ -312,4 +315,64 @@ public class IncidentService {
                 slaServiceClient
         );
     }
+
+    @Transactional
+    public List<Long> checkBusySE(List<Long> ids) {
+
+        log.info("Attempting to get busy support engineers");
+
+        if (ids == null || ids.isEmpty()) {
+            return List.of();
+        }
+
+        // IDs that are already assigned to incidents
+        List<Long> busyIds = incidentRepository.findAssignedToIds(ids);
+
+        if (busyIds == null || busyIds.isEmpty()) {
+            // All are available
+            return ids;
+        }
+
+        return busyIds;
+
+    }
+
+    @Transactional
+    public List<PreciseResponse> getMyIncidents(Long userId, String role) {
+
+        log.info("Attempting to fetch all the incidents associated with {}: {}", role, userId);
+
+        if (userId == null || role == null) {
+            throw new ServiceException("UserId or role cannot be null");
+        }
+
+        List<Incident> incidents;
+
+        switch (role) {
+            case "PROVIDER_MANAGER" ->
+                    incidents = incidentRepository.findAllByAssignedManagerId(userId);
+
+            case "SUPPORT_ENGINEER" ->
+                    incidents = incidentRepository.findAllByAssignedTo(userId);
+
+            case "REPORTER" ->
+                    incidents = incidentRepository.findAllByReportedBy(userId);
+
+            default ->
+                    throw new ServiceException("Invalid role: " + role);
+        }
+
+        if (incidents.isEmpty()) {
+            log.info("No incidents found for userId={} with role={}", userId, role);
+            return List.of();
+        }
+
+        return IncidentMapper.toPreciseResponseList(
+                incidents,
+                userServiceClient,
+                independentServiceClient,
+                slaServiceClient
+        );
+    }
+
 }

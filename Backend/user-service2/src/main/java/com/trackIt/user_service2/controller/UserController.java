@@ -254,6 +254,7 @@ public class UserController {
 
     }
 
+    // gets all the pm for a specific company
     @GetMapping("/details/pmByCompanyId/{compId}")
     public ResponseEntity<ApiResponse<List<ProviderManagerFullResponse>>> getAllFullPm(
             @PathVariable Long compId
@@ -262,6 +263,55 @@ public class UserController {
 
         List<ProviderManagerFullResponse> response = userService
                 .getFullResponseForProviderManagerAll(compId);
+
+        return ResponseEntity.ok(ApiResponse.success(
+                String.format("Retrieved list with size: %d",
+                        response.size()),
+                response
+        ));
+    }
+
+    // gets all the support engineer for a company
+    @GetMapping("/details/seByCompanyId/{compId}")
+    public ResponseEntity<ApiResponse<List<UserResponsePublic>>> getAllSupportEngineer(
+            @PathVariable Long compId
+    ){
+        log.info("REST received to display all the Support Engineer for a company");
+
+        List<UserResponsePublic> response = userService
+                .getSupportEngineerForCompany(compId);
+
+        return ResponseEntity.ok(ApiResponse.success(
+                String.format("Retrieved list with size: %d",
+                        response.size()),
+                response
+        ));
+    }
+
+    @GetMapping("/details/avlSeByCompanyId/{compId}")
+    public ResponseEntity<ApiResponse<List<UserResponsePublic>>> getAvlSupportEngineers(
+            @PathVariable Long compId
+    ){
+        log.info("REST received to display all the available Support Engineer for a company");
+
+        List<UserResponsePublic> response = userService
+                .getAvlSupportEngineerForCompany(compId);
+
+        return ResponseEntity.ok(ApiResponse.success(
+                String.format("Retrieved list with size: %d",
+                        response.size()),
+                response
+        ));
+    }
+
+    @GetMapping("/details/busySeByCompanyId/{compId}")
+    public ResponseEntity<ApiResponse<List<UserResponsePublic>>> getBusySupportEngineers(
+            @PathVariable Long compId
+    ){
+        log.info("REST received to display all the busy Support Engineer for a company");
+
+        List<UserResponsePublic> response = userService
+                .getBusySupportEngineerForCompany(compId);
 
         return ResponseEntity.ok(ApiResponse.success(
                 String.format("Retrieved list with size: %d",

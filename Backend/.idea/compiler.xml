@@ -11,16 +11,6 @@
         <module name="user-service2" />
         <module name="user-service" />
       </profile>
-      <profile name="Annotation profile for independent-services" enabled="true">
-        <sourceOutputDir name="target/generated-sources/annotations" />
-        <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
-        <outputRelativeToContentRoot value="true" />
-        <processorPath useClasspath="false">
-          <entry name="$MAVEN_REPOSITORY$/org/projectlombok/lombok/1.18.42/lombok-1.18.42.jar" />
-          <entry name="$MAVEN_REPOSITORY$/org/projectlombok/lombok/1.18.42/lombok-1.18.42.jar" />
-        </processorPath>
-        <module name="independent-services" />
-      </profile>
       <profile name="Annotation profile for incidents" enabled="true">
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
@@ -30,6 +20,7 @@
         </processorPath>
         <module name="incidents" />
         <module name="api-gateway" />
+        <module name="independent-services" />
         <module name="sla-service" />
       </profile>
     </annotationProcessing>

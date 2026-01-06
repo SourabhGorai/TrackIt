@@ -6,6 +6,8 @@ import com.trackIt.user_service2.model.Users;
 import org.springframework.stereotype.Component;
 
 import java.time.format.DateTimeFormatter;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Component
 public class UserMapper {
@@ -44,6 +46,15 @@ public class UserMapper {
         }
         return response;
     }
+
+//    public static List<UserResponsePublic> toSlaPriorityResponseList(List<Users> list) {
+//        if (list == null || list.isEmpty()){
+//            return List.of();
+//        }
+//        return list.stream()
+//                .map(UserMapper::toResponseWithPublicView)
+//                .collect(Collectors.toList());
+//    }
 
     public static UserResponsePublic toResponseWithPublicView(Users user, String roleName, String companyName) {
 

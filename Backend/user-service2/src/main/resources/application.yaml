@@ -60,6 +60,9 @@ app:
   independent-service:
     url: http://INDEPENDENT-SERVICES/api
 
+  incident-service:
+    url: http://INCIDENT-SERVICE/api
+
 logging:
   level:
     com.trackIt.user_service: DEBUG

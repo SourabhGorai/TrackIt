@@ -1,4 +1,6 @@
 package com.trackIt.user_service2.service;
+
+import com.trackIt.user_service2.client.IncidentServiceClient;
 import com.trackIt.user_service2.client.IndependentServiceClient;
 import com.trackIt.user_service2.dto.request.ProviderManagerRequest;
 import com.trackIt.user_service2.dto.response.*;
@@ -17,9 +19,7 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -31,6 +31,7 @@ public class UserService implements UserDetailsService {
     private final UserRepository userRepository;
     private final IndependentServiceClient independentServiceClient;
     private final ProviderManagerRepository providerManagerRepository;
+    private final IncidentServiceClient incidentServiceClient;
 
     @Override
     @Transactional(readOnly = true)
@@ -324,18 +325,18 @@ public class UserService implements UserDetailsService {
                 () -> new UserNotFoundException("Provider Manager details not found")
         );
 
-        try{
+        try {
 
-            if(pm.getOnCall()){
+            if (pm.getOnCall()) {
                 pm.deactivateOnCall();
-            }else{
+            } else {
                 pm.activateOnCall();
             }
 
             ProviderManagers saved = providerManagerRepository.save(pm);
             return saved.getOnCall();
 
-        }catch(Exception e){
+        } catch (Exception e) {
             throw new RuntimeException();
         }
 
@@ -347,7 +348,7 @@ public class UserService implements UserDetailsService {
 
         Optional<Users> userOpt = userRepository.findById(userId);
 
-        if(userOpt.isEmpty()){
+        if (userOpt.isEmpty()) {
             log.info("User does not exists");
             throw new UserNotFoundException(String.format("User does not present with the ID: %s",
                     userId.toString()));
@@ -355,7 +356,7 @@ public class UserService implements UserDetailsService {
 
         ProviderManagers pm = providerManagerRepository.findByUser_Id(userId)
                 .orElseThrow(() -> new UserNotFoundException(
-                        String.format("User with ID: %s is not an PROVIDER_MANAGER",userId)
+                        String.format("User with ID: %s is not an PROVIDER_MANAGER", userId)
                 ));
 
         Users user = userOpt.orElseThrow();
@@ -436,5 +437,127 @@ public class UserService implements UserDetailsService {
                 .toList();
     }
 
+
+    public List<UserResponsePublic> getSupportEngineerForCompany(Long compId) {
+
+        CompanyResponse company = Optional
+                .ofNullable(independentServiceClient.validateCompany(compId))
+                .orElseThrow(() ->
+                        new ServiceException("Invalid companyId: " + compId)
+                );
+
+        log.info(
+                "Attempting to fetch all SUPPORT_ENGINEERS for company: {}",
+                company.getCompanyName()
+        );
+
+        RoleResponse role = independentServiceClient.validateRoleByName("SUPPORT_ENGINEER");
+
+        List<Users> users = userRepository
+                .findByCompanyIdAndRoleIdAndIsDeletedFalseAndIsAccountLockedFalse(
+                        compId, role.getRoleId()
+                );
+
+        return users.stream()
+                .map(user ->
+                        UserMapper.toResponseWithPublicView(
+                                user,
+                                role.getRole(),
+                                company.getCompanyName()
+                        )
+                )
+                .toList();
+
+    }
+
+    public List<UserResponsePublic> getAvlSupportEngineerForCompany(Long compId) {
+
+        CompanyResponse company = Optional
+                .ofNullable(independentServiceClient.validateCompany(compId))
+                .orElseThrow(() ->
+                        new ServiceException("Invalid companyId: " + compId)
+                );
+
+        log.info(
+                "Attempting to fetch all available SUPPORT_ENGINEERS for company: {}",
+                company.getCompanyName()
+        );
+
+        RoleResponse role = independentServiceClient.validateRoleByName("SUPPORT_ENGINEER");
+
+        List<Users> users = userRepository
+                .findByCompanyIdAndRoleIdAndIsDeletedFalseAndIsAccountLockedFalse(
+                        compId, role.getRoleId()
+                );
+
+        if (users.isEmpty()) {
+            return List.of();
+        }
+
+        List<Long> userIds = users.stream()
+                .map(Users::getId)
+                .toList();
+
+        List<Long> busySE = incidentServiceClient.getBusySupportEngineer(userIds);
+
+        Set<Long> busySet = new HashSet<>(busySE);
+
+        // Filter ONLY available users
+        return users.stream()
+                .filter(user -> !busySet.contains(user.getId()))
+                .map(user ->
+                        UserMapper.toResponseWithPublicView(
+                                user,
+                                role.getRole(),          // or getRoleName()
+                                company.getCompanyName()
+                        )
+                )
+                .toList();
+    }
+
+    public List<UserResponsePublic> getBusySupportEngineerForCompany(Long compId) {
+
+        CompanyResponse company = Optional
+                .ofNullable(independentServiceClient.validateCompany(compId))
+                .orElseThrow(() ->
+                        new ServiceException("Invalid companyId: " + compId)
+                );
+
+        log.info(
+                "Attempting to fetch all busy SUPPORT_ENGINEERS for company: {}",
+                company.getCompanyName()
+        );
+
+        RoleResponse role = independentServiceClient.validateRoleByName("SUPPORT_ENGINEER");
+
+        List<Users> users = userRepository
+                .findByCompanyIdAndRoleIdAndIsDeletedFalseAndIsAccountLockedFalse(
+                        compId, role.getRoleId()
+                );
+
+        if (users.isEmpty()) {
+            return List.of();
+        }
+
+        List<Long> userIds = users.stream()
+                .map(Users::getId)
+                .toList();
+
+        List<Long> busySE = incidentServiceClient.getBusySupportEngineer(userIds);
+
+        Set<Long> busySet = new HashSet<>(busySE);
+
+        // Filter ONLY available users
+        return users.stream()
+                .filter(user -> busySet.contains(user.getId()))
+                .map(user ->
+                        UserMapper.toResponseWithPublicView(
+                                user,
+                                role.getRole(),          // or getRoleName()
+                                company.getCompanyName()
+                        )
+                )
+                .toList();
+    }
 
 }

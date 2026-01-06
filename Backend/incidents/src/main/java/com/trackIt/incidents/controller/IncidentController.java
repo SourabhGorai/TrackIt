@@ -7,6 +7,7 @@ import com.trackIt.incidents.dto.request.SupporterRequest;
 import com.trackIt.incidents.dto.response.IncidentResponse;
 import com.trackIt.incidents.dto.response.PreciseResponse;
 import com.trackIt.incidents.service.IncidentService;
+import com.trackIt.incidents.service.JwtService;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -21,11 +22,18 @@ import java.util.List;
 public class IncidentController {
 
     private final IncidentService incidentService;
+    private final JwtService jwtService;
 
     @PostMapping
     public ResponseEntity<ApiResponse<IncidentResponse>> createIncident (
-            @RequestHeader("X-User-Id") Long userId,
+            @RequestHeader("Authorization") String authHeader,
             @RequestBody ReporterRequest request) {
+
+        // Extract JWT token
+        String token = authHeader.substring(7); // Remove "Bearer " prefix
+
+        // Extract user details from token
+        Long userId = jwtService.extractUserId(token);
 
         log.info("REST received to create an incident for Service ID: {}, with criticality: {}",
                 request.getServiceId(), request.getPriorityId());
@@ -39,9 +47,15 @@ public class IncidentController {
 
     @PostMapping("/providerManager/{incidentId}")
     public ResponseEntity<ApiResponse<?>> pmAllocation(
-            @RequestHeader("X-User-Id") Long userId,
+            @RequestHeader("Authorization") String authHeader,
             @PathVariable Long incidentId
     ) {
+
+        // Extract JWT token
+        String token = authHeader.substring(7); // Remove "Bearer " prefix
+
+        // Extract user details from token
+        Long userId = jwtService.extractUserId(token);
 
         log.info("REST request to assign Provider Manager for Incident ID: {}", incidentId);
 
@@ -59,9 +73,18 @@ public class IncidentController {
 
     @PostMapping("/assign")
     public ResponseEntity<ApiResponse<IncidentResponse>> assignSupportEngineer (
-            @RequestHeader("X-User-Id") Long userId,
+            @RequestHeader("Authorization") String authHeader,
             @RequestBody AssignSupportEngineerRequest req
             ) {
+
+        // Extract JWT token
+        String token = authHeader.substring(7); // Remove "Bearer " prefix
+
+        // Extract user details from token
+//        Long userId = jwtService.extractUserId(token);
+//        String username = jwtService.extractUsername(token);
+//        String role = jwtService.extractRole(token);
+
 
         log.info("REST received to assign an support engineer for incident with ID: {}",
                 req.getIncidentId());
@@ -79,8 +102,16 @@ public class IncidentController {
 
     @PostMapping("/statusUpdate")
     public ResponseEntity<ApiResponse<IncidentResponse>> updateStatus (
-            @RequestHeader("X-User-Id") Long userId,
+            @RequestHeader("Authorization") String authHeader,
             @RequestBody SupporterRequest req) {
+
+        // Extract JWT token
+        String token = authHeader.substring(7); // Remove "Bearer " prefix
+
+        // Extract user details from token
+        Long userId = jwtService.extractUserId(token);
+        String username = jwtService.extractUsername(token);
+        String role = jwtService.extractRole(token);
 
         log.info("REST received to change status of incident with ID: {}", req.getIncidentId());
 
@@ -137,7 +168,50 @@ public class IncidentController {
                 String.format("Fetched list of size: %d", resp.size()),
                 resp
         ));
+
     }
 
+    @GetMapping("/getMyIncidents")
+    public ResponseEntity<ApiResponse<List<PreciseResponse>>> getMyIncidents(
+            @RequestHeader("Authorization") String authHeader
+    ) {
+
+        // Extract JWT token
+        String token = authHeader.substring(7); // Remove "Bearer " prefix
+
+        // Extract user details from token
+        Long userId = jwtService.extractUserId(token);
+        String username = jwtService.extractUsername(token);
+        String role = jwtService.extractRole(token);
+
+        log.info("REST received to fetch incidents of {}", username);
+
+        List<PreciseResponse> resp = incidentService.getMyIncidents(userId, role);
+
+        return ResponseEntity.ok(ApiResponse.success(
+                String.format("Successfully fetched all the incidents associated with %s: %s",
+                        role, username),
+                resp
+        ));
+
+    }
+
+    //******************* USED IN USERS-SERVICE ********************//
+
+    @GetMapping("/supportEngineer/isAvailable")
+    public ResponseEntity<ApiResponse<List<Long>>> getBusySupportEngineer(
+            @RequestBody List<Long> ids
+    ) {
+
+        log.info("REST received to check availability status of ids: {}", ids);
+
+        List<Long> resp = incidentService.checkBusySE(ids);
+
+        return ResponseEntity.ok(ApiResponse.success(
+                String.format("Fetched list of size: %d", resp.size()),
+                resp
+        ));
+
+    }
 
 }
