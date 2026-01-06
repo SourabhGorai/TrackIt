@@ -11,26 +11,43 @@
         <module name="user-service2" />
         <module name="user-service" />
       </profile>
-      <profile name="Annotation profile for incidents" enabled="true">
+      <profile name="Annotation profile for notification-service" enabled="true">
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
         <processorPath useClasspath="false">
           <entry name="$MAVEN_REPOSITORY$/org/projectlombok/lombok/1.18.42/lombok-1.18.42.jar" />
         </processorPath>
-        <module name="incidents" />
         <module name="api-gateway" />
         <module name="independent-services" />
+        <module name="notification-service" />
         <module name="sla-service" />
       </profile>
+      <profile name="Annotation profile for incident-service" enabled="true">
+        <sourceOutputDir name="target/generated-sources/annotations" />
+        <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
+        <outputRelativeToContentRoot value="true" />
+        <processorPath useClasspath="false">
+          <entry name="$MAVEN_REPOSITORY$/org/projectlombok/lombok/1.18.30/lombok-1.18.30.jar" />
+          <entry name="$MAVEN_REPOSITORY$/org/projectlombok/lombok/1.18.30/lombok-1.18.30.jar" />
+        </processorPath>
+        <module name="incident-service" />
+      </profile>
     </annotationProcessing>
+    <bytecodeTargetLevel>
+      <module name="incidents" target="17" />
+      <module name="incidents2" target="17" />
+    </bytecodeTargetLevel>
   </component>
   <component name="JavacSettings">
     <option name="ADDITIONAL_OPTIONS_OVERRIDE">
       <module name="api-gateway" options="-parameters" />
       <module name="eureka-server" options="-parameters" />
+      <module name="incident-service" options="-parameters" />
       <module name="incidents" options="-parameters" />
+      <module name="incidents2" options="-parameters" />
       <module name="independent-services" options="-parameters" />
+      <module name="notification-service" options="-parameters" />
       <module name="sla-service" options="-parameters" />
       <module name="user-service" options="-parameters" />
       <module name="user-service2" options="-parameters" />

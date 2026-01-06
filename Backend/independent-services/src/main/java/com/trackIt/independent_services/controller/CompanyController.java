@@ -76,11 +76,14 @@ public class CompanyController {
     }
 
     @GetMapping("/validate/{companyId}")
-    public ResponseEntity<?> validateRole(@PathVariable Long companyId){
+    public ResponseEntity<ApiResponse<CompanyResponse>> validateCompany(@PathVariable Long companyId){
         log.info("REST request received to validate company with id: {}", companyId);
         CompanyResponse resp = companyService.validateCompany(companyId);
         System.out.println(resp);
-        return ResponseEntity.ok(resp);
+        return ResponseEntity.ok(ApiResponse.success(
+                "Validate Successfully",
+                resp
+        ));
     }
 
     @GetMapping("/getById/{id}")

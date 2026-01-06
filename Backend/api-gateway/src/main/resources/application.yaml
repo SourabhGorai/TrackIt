@@ -51,7 +51,7 @@ spring:
             - id: independent-services-protected
               uri: lb://INDEPENDENT-SERVICES
               predicates:
-                - Path=/api/**
+                - Path=/api/companies/**,/api/priority/**,/api/services/**,/api/roles/**
               filters:
                 - AuthenticationFilter
 
@@ -59,15 +59,15 @@ spring:
             - id: sla-service-protected
               uri: lb://SLA-SERVICE
               predicates:
-                - Path=/api/**
+                - Path=/api/sla/**
               filters:
                 - AuthenticationFilter
 
             # ---------- INCIDENT SERVICE (PROTECTED) ------------
             - id: incident-service-protected
-              uri: lb://INCIDENTS
+              uri: lb://INCIDENT-SERVICE
               predicates:
-                - Path=/api/**
+                - Path=/api/incidents/**
               filters:
                 - AuthenticationFilter
 

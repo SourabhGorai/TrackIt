@@ -172,6 +172,17 @@ public class GatewayConfig {
                                         new RoleBasedAuthorizationFilter.Config("ADMIN", "MANAGER", "REPORTER", "SUPPORT_ENGINEER"))))
                         .uri("lb://SLA-SERVICE"))
 
+                // ========================================
+                //       INCIDENT SERVICE ROUTES
+                // ========================================
+
+                .route("incident-service-protected", r -> r
+                        .path("/api/incidents/**")
+                        .filters(f -> f.filter(authenticationFilter.apply(
+                                new AuthenticationFilter.Config())))
+                        .uri("lb://INCIDENT-SERVICE"))
+
+
                 .build();
     }
 }
