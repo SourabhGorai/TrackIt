@@ -1,6 +1,7 @@
 package com.trackIt.api_gateway.config;
 
 import com.trackIt.api_gateway.filter.AuthenticationFilter;
+import com.trackIt.api_gateway.filter.InternalServiceAuthFilter;
 import com.trackIt.api_gateway.filter.RoleBasedAuthorizationFilter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.gateway.route.RouteLocator;
@@ -13,17 +14,33 @@ public class GatewayConfig {
 
     private final AuthenticationFilter authenticationFilter;
     private final RoleBasedAuthorizationFilter roleBasedAuthorizationFilter;
+    private final InternalServiceAuthFilter internalServiceAuthFilter;
 
     @Autowired
     public GatewayConfig(AuthenticationFilter authenticationFilter,
-                         RoleBasedAuthorizationFilter roleBasedAuthorizationFilter) {
+                         RoleBasedAuthorizationFilter roleBasedAuthorizationFilter,
+                         InternalServiceAuthFilter internalServiceAuthFilter) {
         this.authenticationFilter = authenticationFilter;
         this.roleBasedAuthorizationFilter = roleBasedAuthorizationFilter;
+        this.internalServiceAuthFilter = internalServiceAuthFilter;
     }
 
     @Bean
     public RouteLocator customRouteLocator(RouteLocatorBuilder builder) {
         return builder.routes()
+
+                // ========================================
+                //       INTERNAL SERVICE ROUTES
+                // ========================================
+                // These routes are for service-to-service communication
+                // They use internal token authentication instead of JWT
+
+                .route("internal-user-details", r -> r
+                        .path("/api/users/details/**", "/api/users/public/**")
+                        .and().header("X-Internal-Service")
+                        .filters(f -> f.filter(internalServiceAuthFilter.apply(
+                                new InternalServiceAuthFilter.Config())))
+                        .uri("lb://USER-SERVICE2"))
 
                 // ---------- PUBLIC ROUTES ----------
                 .route("user-auth-login", r -> r

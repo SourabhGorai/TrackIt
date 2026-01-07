@@ -1,11 +1,15 @@
-package com.trackIt.notificationservice.consumer;
+package com.trackIt.notification_service.consumer;
 
-import com.trackIt.notificationservice.dto.IncidentCreatedEvent;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.trackIt.notification_service.dto.IncidentCreatedEvent;
+import com.trackIt.notification_service.dto.IncidentStatusChangedEvent;
 import com.trackIt.notification_service.service.NotificationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
+
+import java.util.Map;
 
 @Slf4j
 @Component
@@ -13,20 +17,60 @@ import org.springframework.stereotype.Component;
 public class IncidentEventConsumer {
 
     private final NotificationService notificationService;
+    private final ObjectMapper objectMapper;
 
     @KafkaListener(
             topics = "incident-events",
             groupId = "notification-service"
     )
-    public void consumeIncidentEvents(IncidentCreatedEvent event) {
+    public void consumeIncidentEvents(Map<String, Object> eventMap) {
 
-        log.info("Received event: {}", event);
+        try {
+            String eventType = (String) eventMap.get("eventType");
+            log.info("Received event: type={}, data={}", eventType, eventMap);
 
-        if (!"INCIDENT_CREATED".equals(event.getEventType())) {
-            log.info("Ignoring eventType={}", event.getEventType());
-            return;
+            switch (eventType) {
+                case "INCIDENT_CREATED" -> handleIncidentCreated(eventMap);
+                case "INCIDENT_STATUS_CHANGED" -> handleStatusChanged(eventMap);
+                default -> log.warn("Unknown event type: {}", eventType);
+            }
+
+        } catch (Exception e) {
+            log.error("Error processing event", e);
         }
+    }
 
-        notificationService.notifyProviderManagers(event);
+    private void handleIncidentCreated(Map<String, Object> eventMap) {
+        try {
+            IncidentCreatedEvent event = objectMapper.convertValue(
+                    eventMap,
+                    IncidentCreatedEvent.class
+            );
+
+            log.info("Processing INCIDENT_CREATED for incidentId={}",
+                    event.getIncidentId());
+
+            notificationService.notifyProviderManagers(event);
+
+        } catch (Exception e) {
+            log.error("Error handling INCIDENT_CREATED event", e);
+        }
+    }
+
+    private void handleStatusChanged(Map<String, Object> eventMap) {
+        try {
+            IncidentStatusChangedEvent event = objectMapper.convertValue(
+                    eventMap,
+                    IncidentStatusChangedEvent.class
+            );
+
+            log.info("Processing INCIDENT_STATUS_CHANGED for incidentId={}, status={}",
+                    event.getIncidentId(), event.getNewStatus());
+
+            notificationService.notifyStatusChange(event);
+
+        } catch (Exception e) {
+            log.error("Error handling INCIDENT_STATUS_CHANGED event", e);
+        }
     }
 }

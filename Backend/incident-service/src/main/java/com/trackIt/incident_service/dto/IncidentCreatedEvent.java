@@ -13,9 +13,11 @@ public class IncidentCreatedEvent {
     private Long incidentId;
 
     private String title;
+    private Long serviceId;
     private String serviceName;
     private String priority;
-    private String companyName;
+    private Long providerCompId;
+    private String clientCompanyName;
 
     private String reportedAt;
 }

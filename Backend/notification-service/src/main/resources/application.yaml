@@ -1,3 +1,110 @@
 spring:
   application:
     name: notification-service
+
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/track_it}
+    username: ${DB_USER}
+    password: ${DB_PASS}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+
+  # Kafka Consumer Configuration
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    consumer:
+      group-id: notification-service
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      enable-auto-commit: true
+      auto-commit-interval: 1000
+      properties:
+        spring:
+          json:
+            trusted:
+              packages: "*"
+            use:
+              type:
+                headers: false
+            value:
+              default:
+                type: "java.util.Map"
+
+  # Mail Configuration (for actual email sending)
+  mail:
+    host: ${MAIL_HOST:smtp.gmail.com}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USER}
+    password: ${MAIL_PASS}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+          connectiontimeout: 5000
+          timeout: 5000
+          writetimeout: 5000
+        transport:
+          protocol: smtp
+    default-encoding: UTF-8
+
+server:
+  port: ${PORT:8086}
+  error:
+    include-message: always
+    include-binding-errors: always
+
+logging:
+  level:
+    com.trackIt: DEBUG
+    org.springframework.web: INFO
+    org.springframework.kafka: INFO
+    org.springframework.mail: DEBUG  # Enable mail debugging
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_SERVER:http://localhost:8761/eureka}
+    fetch-registry: true
+    register-with-eureka: true
+
+app:
+  user-service:
+    url: http://USER-SERVICE2/api
+    internal-token: notification-service-secret
+
+  # Notification Settings
+  notification:
+    enabled: ${EMAIL_ENABLED:true}  # Set to false to disable email sending (logs only)
+    sender-email: ${SENDER_EMAIL:noreply@trackit.com}
+    sender-name: ${SENDER_NAME:TrackIt Support System}
+    max-retry-attempts: 3
+    retry-delay-ms: 5000
+
+  # Kafka Topics Configuration
+  kafka:
+    topics:
+      incident-events: incident-events
+
+# Management & Actuator Configuration (optional)
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always

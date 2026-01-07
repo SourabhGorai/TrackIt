@@ -6,6 +6,7 @@ import com.trackIt.incident_service.dto.request.ReporterRequest;
 import com.trackIt.incident_service.dto.request.SupporterRequest;
 import com.trackIt.incident_service.dto.response.IncidentResponse;
 import com.trackIt.incident_service.dto.response.PreciseResponse;
+import com.trackIt.incident_service.model.Status;
 import com.trackIt.incident_service.service.IncidentService;
 import com.trackIt.incident_service.service.JwtService;
 import lombok.AllArgsConstructor;
@@ -13,6 +14,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Slf4j
@@ -97,6 +99,20 @@ public class IncidentController {
                         response
                 )
         );
+
+    }
+
+    @GetMapping("/getStatus")
+    public ResponseEntity<ApiResponse<List<String>>> getAllStatus(){
+
+        log.info("REST received to get all status types");
+
+        List<String> resp = incidentService.getAllStatusTypes();
+
+        return ResponseEntity.ok(ApiResponse.success(
+                "Fetched all the status successfully",
+                resp
+        ));
 
     }
 

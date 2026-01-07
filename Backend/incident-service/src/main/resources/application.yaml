@@ -17,6 +17,23 @@ spring:
         dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: true
 
+  # Kafka Producer Configuration
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      acks: all  # Ensures message is written to all replicas
+      retries: 3
+      properties:
+        max.in.flight.requests.per.connection: 5
+        enable.idempotence: true  # Prevents duplicate messages
+        spring.json.add.type.headers: false  # Don't add type headers
+    properties:
+      # Common Kafka properties
+      request.timeout.ms: 30000
+      delivery.timeout.ms: 120000
+
 server:
   port: ${PORT:8084}
   error:
@@ -27,6 +44,7 @@ logging:
   level:
     com.TrackIT: DEBUG
     org.springframework.web: INFO
+    org.springframework.kafka: INFO  # Add Kafka logging
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
 
@@ -46,3 +64,8 @@ app:
     url: http://SLA-SERVICE/api
   user-service:
     url: http://USER-SERVICE2/api
+
+  # Kafka Topics Configuration
+  kafka:
+    topics:
+      incident-events: incident-events

@@ -71,6 +71,7 @@ spring:
               filters:
                 - AuthenticationFilter
 
+
           # ================= CORS =================
           globalcors:
             cors-configurations:
@@ -94,7 +95,11 @@ server:
 
 # ================= JWT =================
 jwt:
-  secret: ${SECRET_KEY:local-dev-secret-key-32-chars-long}
+  secret: ${JWT_SECRET:local-dev-secret-key-32-chars-long}
+
+# ================= INTERNAL SERVICE AUTH =================
+app:
+  internal-token: ${INTERNAL_TOKEN:notification-service-secret}
 
 # ================= EUREKA =================
 eureka:

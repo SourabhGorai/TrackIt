@@ -23,12 +23,11 @@
         <module name="notification-service" />
         <module name="sla-service" />
       </profile>
-      <profile name="Annotation profile for incident-service" enabled="true">
+      <profile name="Annotation profile for incidents" enabled="true">
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
         <processorPath useClasspath="false">
-          <entry name="$MAVEN_REPOSITORY$/org/projectlombok/lombok/1.18.30/lombok-1.18.30.jar" />
           <entry name="$MAVEN_REPOSITORY$/org/projectlombok/lombok/1.18.30/lombok-1.18.30.jar" />
         </processorPath>
         <module name="incident-service" />

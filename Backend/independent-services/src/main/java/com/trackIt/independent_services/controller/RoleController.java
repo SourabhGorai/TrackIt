@@ -55,18 +55,24 @@ public class RoleController {
     }
 
     @GetMapping("/validate/{roleId}")
-    public ResponseEntity<?> validateRole(@PathVariable Long roleId) {
+    public ResponseEntity<ApiResponse<RolesResponse>> validateRole(@PathVariable Long roleId) {
         log.info("REST request to validate roleId");
         RolesResponse resp = roleService.validateRole(roleId);
         System.out.println(resp);
-        return ResponseEntity.ok(resp);
+        return ResponseEntity.ok(ApiResponse.success(
+                "Successfully retrieved",
+                resp
+        ));
     }
 
     @GetMapping("/validateByName/{name}")
-    public ResponseEntity<RolesResponse> validateByName(@PathVariable String name) {
+    public ResponseEntity<ApiResponse<RolesResponse>> validateByName(@PathVariable String name) {
         log.info("REST received to validate roleId by name: {}", name);
         RolesResponse resp = roleService.getRoleId(name);
-        return ResponseEntity.ok(resp);
+        return ResponseEntity.ok(ApiResponse.success(
+                "Successfully retrieved",
+                resp
+        ));
     }
 
     @DeleteMapping("/{role}")
