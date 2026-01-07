@@ -51,6 +51,7 @@ app:
     secret: ${JWT_SECRET}
     expiration: 86400000  # 24 hours in milliseconds
     refresh-expiration: 604800000  # 7 days in milliseconds
+  internal-token: notification-service-secret
 
   otp:
     length: 6

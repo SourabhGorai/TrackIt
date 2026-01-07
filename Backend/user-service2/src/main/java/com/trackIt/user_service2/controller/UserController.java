@@ -256,7 +256,7 @@ public class UserController {
 
     // gets all the pm for a specific company
     @GetMapping("/details/pmByCompanyId/{compId}")
-    public ResponseEntity<ApiResponse<List<ProviderManagerFullResponse>>> getAllFullPm(
+    public ResponseEntity<ApiResponse<List<ProviderManagerFullResponse>>> getAllFullPmByCompanyId(
             @PathVariable Long compId
     ){
         log.info("REST received to display all the provider_manager contents");

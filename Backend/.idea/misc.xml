@@ -11,7 +11,16 @@
         <option value="$PROJECT_DIR$/api-gateway/pom.xml" />
         <option value="$PROJECT_DIR$/sla-service/pom.xml" />
         <option value="$PROJECT_DIR$/incidents/pom.xml" />
+        <option value="$PROJECT_DIR$/notification-service/pom.xml" />
+        <option value="$PROJECT_DIR$/incidents2/pom.xml" />
+        <option value="$PROJECT_DIR$/incident-service/pom.xml" />
       </list>
+    </option>
+    <option name="ignoredFiles">
+      <set>
+        <option value="$PROJECT_DIR$/incidents/pom.xml" />
+        <option value="$PROJECT_DIR$/incidents2/pom.xml" />
+      </set>
     </option>
   </component>
   <component name="ProjectRootManager" version="2" languageLevel="JDK_20" default="true" project-jdk-name="20" project-jdk-type="JavaSDK">
