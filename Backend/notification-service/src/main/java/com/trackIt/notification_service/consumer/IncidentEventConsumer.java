@@ -3,6 +3,7 @@ package com.trackIt.notification_service.consumer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.trackIt.notification_service.dto.IncidentCreatedEvent;
 import com.trackIt.notification_service.dto.IncidentStatusChangedEvent;
+import com.trackIt.notification_service.dto.SupportEngineerAssignedEvent;
 import com.trackIt.notification_service.service.NotificationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -32,6 +33,7 @@ public class IncidentEventConsumer {
             switch (eventType) {
                 case "INCIDENT_CREATED" -> handleIncidentCreated(eventMap);
                 case "INCIDENT_STATUS_CHANGED" -> handleStatusChanged(eventMap);
+                case "SUPPORT_ENGINEER_ASSIGNED" -> handleSupportEngineerAssigned(eventMap);
                 default -> log.warn("Unknown event type: {}", eventType);
             }
 
@@ -71,6 +73,23 @@ public class IncidentEventConsumer {
 
         } catch (Exception e) {
             log.error("Error handling INCIDENT_STATUS_CHANGED event", e);
+        }
+    }
+
+    private void handleSupportEngineerAssigned(Map<String, Object> eventMap) {
+        try {
+            SupportEngineerAssignedEvent event = objectMapper.convertValue(
+                    eventMap,
+                    SupportEngineerAssignedEvent.class
+            );
+
+            log.info("Processing SUPPORT_ENGINEER_ASSIGNED for incidentId={}, engineer={}",
+                    event.getIncidentId(), event.getSupportEngineerName());
+
+            notificationService.notifySupportEngineerAssigned(event);
+
+        } catch (Exception e) {
+            log.error("Error handling SUPPORT_ENGINEER_ASSIGNED event", e);
         }
     }
 }

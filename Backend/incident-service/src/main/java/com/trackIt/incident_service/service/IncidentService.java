@@ -138,8 +138,8 @@ public class IncidentService {
 
         ServicesResponse service = independentServiceClient.validateService(serviceId);
 
-        if (service.getClientCompanyId() != user.getCompanyId()) {
-            throw new ServiceException("You are not an employee of the client company.");
+        if (service.getProviderCompanyId() != user.getCompanyId()) {
+            throw new ServiceException("You are not an employee of the provider company.");
         }
 
         if (incident.getAssignedManagerId() != null) {
@@ -153,7 +153,6 @@ public class IncidentService {
 
         return String.format("%s (%s)", user.getName(), user.getEmployeeId());
     }
-
 
     @Transactional
     public IncidentResponse assignSupportEngineer(AssignSupportEngineerRequest req) {
@@ -200,6 +199,20 @@ public class IncidentService {
                         )
                 );
 
+        ServicesResponse service = Optional
+                .ofNullable(independentServiceClient.validateService(incident.getServiceId()))
+                .orElseThrow(() ->
+                        new ServiceException(String.format("Service not found Id: %s",
+                                incident.getServiceId().toString()))
+                );
+
+        if (!service.getProviderCompanyId().equals(assigned.getCompanyId())) {
+            throw new ServiceException(String.format(
+                    "Employee Id: %s, is not of the provider company.",
+                    req.getAssignedTo()
+            ));
+        }
+
         RoleResponse role = Optional
                 .ofNullable(independentServiceClient.validateRole(assigned.getRoleId()))
                 .orElseThrow(() -> new ServiceException("Unable to validate role"));
@@ -208,10 +221,34 @@ public class IncidentService {
             throw new ServiceException("User is not a support engineer");
         }
 
+        Status previousStatus = incident.getStatus();
         incident.setAssignedTo(assigned.getId());
         incident.setStatus(Status.IN_PROGRESS);
 
         Incident saved = incidentRepository.save(incident);
+
+        // 🔐 Publish event ONLY after successful DB commit
+        TransactionSynchronizationManager.registerSynchronization(
+                new TransactionSynchronization() {
+                    @Override
+                    public void afterCommit() {
+                        incidentEventPublisher.publishSupportEngineerAssigned(
+                                saved,
+                                previousStatus,
+                                priority.getPriorityLevel(),
+                                service.getServiceName(),
+                                reporter.getId(),
+                                incident.getAssignedManagerId(),
+                                assigned.getId(),
+                                assigned.getName(),
+                                assigned.getEmployeeId()
+                        );
+                    }
+                }
+        );
+
+        log.info("Successfully assigned support engineer {} to incident {}",
+                assigned.getName(), saved.getIncidentId());
 
         return IncidentMapper.toResponse(
                 saved,
@@ -220,6 +257,86 @@ public class IncidentService {
                 assigned.getName()
         );
     }
+
+//    @Transactional
+//    public IncidentResponse assignSupportEngineer(AssignSupportEngineerRequest req) {
+//
+//        log.info("Assign support engineer request received for ID: {}", req.getIncidentId());
+//
+//        Incident incident = incidentRepository.findById(req.getIncidentId())
+//                .orElseThrow(() ->
+//                        new NotFoundException("Incident", req.getIncidentId().toString())
+//                );
+//
+//        UserResponsePublic reporter = Optional
+//                .ofNullable(userServiceClient.getUserDetails(incident.getReportedBy()))
+//                .orElseThrow(() -> new ServiceException("Reporter not found"));
+//
+//        PriorityResponse priority = Optional
+//                .ofNullable(independentServiceClient.validatePriority(incident.getPriorityId()))
+//                .orElseThrow(() -> new ServiceException("Invalid priority"));
+//
+//        if (incident.getAssignedTo() != null) {
+//
+//            UserResponsePublic assigned = Optional
+//                    .ofNullable(userServiceClient.getUserDetails(incident.getAssignedTo()))
+//                    .orElseThrow(() -> new ServiceException("Assigned user not found"));
+//
+//            log.info("Already assigned | EmpID: {} | Name: {} | Status: {}",
+//                    assigned.getEmployeeId(),
+//                    assigned.getName(),
+//                    incident.getStatus());
+//
+//            return IncidentMapper.toResponse(
+//                    incident,
+//                    reporter.getName(),
+//                    priority.getPriorityLevel(),
+//                    assigned.getName()
+//            );
+//        }
+//
+//        UserResponsePublic assigned = Optional
+//                .ofNullable(userServiceClient.getUserDetailsByEmployeeId(req.getAssignedTo()))
+//                .orElseThrow(() ->
+//                        new UserNotFoundException(
+//                                "User not found with employee ID: " + req.getAssignedTo()
+//                        )
+//                );
+//
+//        ServicesResponse service = Optional
+//                .ofNullable(independentServiceClient.validateService(incident.getServiceId()))
+//                .orElseThrow(() ->
+//                        new ServiceException(String.format("Service not found Id: %s",
+//                                incident.getServiceId().toString()))
+//                );
+//
+//        if (!service.getProviderCompanyId().equals(assigned.getCompanyId())) {
+//            throw new ServiceException(String.format(
+//                    "Employee Id: %s, is not of the provider company.",
+//                    req.getAssignedTo()
+//            ));
+//        }
+//
+//        RoleResponse role = Optional
+//                .ofNullable(independentServiceClient.validateRole(assigned.getRoleId()))
+//                .orElseThrow(() -> new ServiceException("Unable to validate role"));
+//
+//        if (!"SUPPORT_ENGINEER".equals(role.getRole())) {
+//            throw new ServiceException("User is not a support engineer");
+//        }
+//
+//        incident.setAssignedTo(assigned.getId());
+//        incident.setStatus(Status.IN_PROGRESS);
+//
+//        Incident saved = incidentRepository.save(incident);
+//
+//        return IncidentMapper.toResponse(
+//                saved,
+//                reporter.getName(),
+//                priority.getPriorityLevel(),
+//                assigned.getName()
+//        );
+//    }
 
 
 //    @Transactional
@@ -290,7 +407,7 @@ public class IncidentService {
 //    }
 
     @Transactional
-    public IncidentResponse changeStatus(SupporterRequest req) {
+    public IncidentResponse changeStatus(SupporterRequest req, Long userId, String role) {
 
         Long id = req.getIncidentId();
         Status status = req.getStatus();
@@ -307,9 +424,29 @@ public class IncidentService {
         try {
             Incident incident = incidentOpt.get();
 
+            boolean isAdmin = "ADMIN".equals(role);
+
+            boolean isAssignedManager =
+                    userId.equals(incident.getAssignedManagerId());
+
+            boolean isAssignedSupport =
+                    userId.equals(incident.getAssignedTo());
+
+            boolean isReporter =
+                    userId.equals(incident.getReportedBy());
+
+            if (!(isAdmin || isAssignedManager || isAssignedSupport || isReporter)) {
+                throw new ServiceException(
+                        String.format(
+                                "You are not allowed to change the status of the incident: %s",
+                                incident.getIncidentId()
+                        )
+                );
+            }
+
             UserResponsePublic reporter = Optional
-                    .ofNullable(userServiceClient.getUserDetails(incident.getReportedBy()))
-                    .orElseThrow(() -> new ServiceException("Reporter not found"));
+                        .ofNullable(userServiceClient.getUserDetails(incident.getReportedBy()))
+                        .orElseThrow(() -> new ServiceException("Reporter not found"));
 
             PriorityResponse priority = Optional
                     .ofNullable(independentServiceClient.validatePriority(incident.getPriorityId()))
@@ -515,26 +652,24 @@ public class IncidentService {
         );
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public List<Long> checkBusySE(List<Long> ids) {
 
         log.info("Attempting to get busy support engineers");
 
         if (ids == null || ids.isEmpty()) {
-            return List.of();
+            return List.of(); // always return a list
         }
 
         // IDs that are already assigned to incidents
         List<Long> busyIds = incidentRepository.findAssignedToIds(ids);
 
-        if (busyIds == null || busyIds.isEmpty()) {
-            // All are available
-            return ids;
-        }
+        log.info("Here are the busy ids: {}", busyIds);
 
-        return busyIds;
-
+        // If none are busy, return empty list
+        return busyIds == null ? List.of() : busyIds;
     }
+
 
     @Transactional
     public List<PreciseResponse> getMyIncidents(Long userId, String role) {

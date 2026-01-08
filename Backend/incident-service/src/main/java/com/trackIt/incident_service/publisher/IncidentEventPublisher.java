@@ -3,6 +3,7 @@ package com.trackIt.incident_service.publisher;
 import com.trackIt.incident_service.constants.KafkaTopics;
 import com.trackIt.incident_service.dto.IncidentCreatedEvent;
 import com.trackIt.incident_service.dto.IncidentStatusChangedEvent;
+import com.trackIt.incident_service.dto.SupportEngineerAssignedEvent;
 import com.trackIt.incident_service.model.Incident;
 import com.trackIt.incident_service.model.Status;
 import lombok.RequiredArgsConstructor;
@@ -52,6 +53,51 @@ public class IncidentEventPublisher {
 
         log.info("Published INCIDENT_CREATED event for incidentId={}",
                 incident.getIncidentId());
+    }
+
+    public void publishSupportEngineerAssigned(
+            Incident incident,
+            Status previousStatus,
+            String priority,
+            String serviceName,
+            Long reporterId,
+            Long providerManagerId,
+            Long supportEngineerId,
+            String supportEngineerName,
+            String supportEngineerEmployeeId
+    ) {
+        // Build list of user IDs to notify
+        List<Long> notifyUserIds = new ArrayList<>();
+
+        if (reporterId != null) {
+            notifyUserIds.add(reporterId);
+        }
+        if (providerManagerId != null) {
+            notifyUserIds.add(providerManagerId);
+        }
+        if (supportEngineerId != null) {
+            notifyUserIds.add(supportEngineerId);
+        }
+
+        SupportEngineerAssignedEvent event = SupportEngineerAssignedEvent.builder()
+                .eventType("SUPPORT_ENGINEER_ASSIGNED")
+                .incidentId(incident.getIncidentId())
+                .title(incident.getTitle())
+                .serviceName(serviceName)
+                .priority(priority)
+                .supportEngineerId(supportEngineerId)
+                .supportEngineerName(supportEngineerName)
+                .supportEngineerEmployeeId(supportEngineerEmployeeId)
+                .previousStatus(previousStatus != null ? previousStatus.name() : null)
+                .newStatus(incident.getStatus().name())
+                .notifyUserIds(notifyUserIds)
+                .assignedAt(format(incident.getUpdatedAt()))
+                .build();
+
+        sendEvent(KafkaTopics.INCIDENT_EVENTS, incident.getIncidentId().toString(), event);
+
+        log.info("Published SUPPORT_ENGINEER_ASSIGNED event for incidentId={}, assignedTo={}",
+                incident.getIncidentId(), supportEngineerName);
     }
 
     public void publishIncidentStatusChanged(

@@ -160,7 +160,7 @@ public class IndependentServiceClient {
         try {
             ApiResponse<List<Long>> response = webClientBuilder.build()
                     .get()
-                    .uri(independentServiceUrl + "/serviceList/{compId}", compId)
+                    .uri(independentServiceUrl + "/services/serviceList/{compId}", compId)
                     .header("Authorization", authHeader)
                     .retrieve()
                     .onStatus(

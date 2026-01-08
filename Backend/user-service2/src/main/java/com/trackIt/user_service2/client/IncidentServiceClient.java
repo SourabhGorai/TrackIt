@@ -3,6 +3,7 @@ package com.trackIt.user_service2.client;
 import com.trackIt.user_service2.dto.ApiResponse;
 import com.trackIt.user_service2.dto.response.RoleResponse;
 import com.trackIt.user_service2.exception.ExternalServiceException;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -19,9 +20,14 @@ import java.util.List;
 public class IncidentServiceClient {
 
     private final WebClient.Builder webClientBuilder;
+    private final HttpServletRequest request;
 
     @Value("${app.incident-service.url}")
     private String incidentServiceUrl;
+
+    private String getAuthHeader() {
+        return request.getHeader("Authorization");
+    }
 
     public List<Long> getBusySupportEngineer(List<Long> ids) {
         try {
@@ -29,8 +35,9 @@ public class IncidentServiceClient {
 
             ApiResponse<List<Long>> response = webClientBuilder.build()
                     .post()
-                    .uri(incidentServiceUrl + "/supportEngineer/isAvailable")
+                    .uri(incidentServiceUrl + "/incidents/supportEngineer/isAvailable")
                     .bodyValue(ids)
+                    .header("Authorization", getAuthHeader())
                     .retrieve()
                     .bodyToMono(new ParameterizedTypeReference<ApiResponse<List<Long>>>() {})
                     .timeout(Duration.ofSeconds(5))

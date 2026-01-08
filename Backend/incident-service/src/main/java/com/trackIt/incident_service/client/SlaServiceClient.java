@@ -32,7 +32,7 @@ public class SlaServiceClient {
 
             ApiResponse<PromiseResponse> response = webClientBuilder.build()
                     .get()
-                    .uri(slaServiceUrl + "/getTimes/{serviceId}/{priorityId}",
+                    .uri(slaServiceUrl + "/sla/getTimes/{serviceId}/{priorityId}",
                             serviceId, priorityId)
                     .header("Authorization", authHeader)
                     .retrieve()

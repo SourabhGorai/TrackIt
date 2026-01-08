@@ -116,7 +116,7 @@ public class IncidentController {
 
     }
 
-    @PostMapping("/statusUpdate")
+    @PutMapping("/statusUpdate")
     public ResponseEntity<ApiResponse<IncidentResponse>> updateStatus (
             @RequestHeader("Authorization") String authHeader,
             @RequestBody SupporterRequest req) {
@@ -125,13 +125,13 @@ public class IncidentController {
         String token = authHeader.substring(7); // Remove "Bearer " prefix
 
         // Extract user details from token
-        Long userId = jwtService.extractUserId(token);
-        String username = jwtService.extractUsername(token);
-        String role = jwtService.extractRole(token);
+         Long userId = jwtService.extractUserId(token);
+        // String username = jwtService.extractUsername(token);
+         String role = jwtService.extractRole(token);
 
         log.info("REST received to change status of incident with ID: {}", req.getIncidentId());
 
-        IncidentResponse response = incidentService.changeStatus(req);
+        IncidentResponse response = incidentService.changeStatus(req, userId, role);
 
         return ResponseEntity.ok(
                 ApiResponse.success(
@@ -214,7 +214,7 @@ public class IncidentController {
 
     //******************* USED IN USERS-SERVICE ********************//
 
-    @GetMapping("/supportEngineer/isAvailable")
+    @PostMapping("/supportEngineer/isAvailable")
     public ResponseEntity<ApiResponse<List<Long>>> getBusySupportEngineer(
             @RequestBody List<Long> ids
     ) {

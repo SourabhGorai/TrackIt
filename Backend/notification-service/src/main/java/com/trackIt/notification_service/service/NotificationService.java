@@ -1,9 +1,6 @@
 package com.trackIt.notification_service.service;
 
-import com.trackIt.notification_service.dto.IncidentCreatedEvent;
-import com.trackIt.notification_service.dto.IncidentStatusChangedEvent;
-import com.trackIt.notification_service.dto.ProviderManagerFullResponse;
-import com.trackIt.notification_service.dto.UserResponsePublic;
+import com.trackIt.notification_service.dto.*;
 import com.trackIt.notification_service.external.UserServiceClient;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -85,6 +82,100 @@ public class NotificationService {
                 log.error("Failed to notify user ID: {}", userId, e);
             }
         }
+    }
+
+    public void notifySupportEngineerAssigned(SupportEngineerAssignedEvent event) {
+
+        log.info("Notifying users about support engineer assignment: incidentId={}, engineer={}",
+                event.getIncidentId(), event.getSupportEngineerName());
+
+        List<Long> userIds = event.getNotifyUserIds();
+
+        if (userIds == null || userIds.isEmpty()) {
+            log.warn("No users to notify for incident ID: {}", event.getIncidentId());
+            return;
+        }
+
+        for (Long userId : userIds) {
+            try {
+                UserResponsePublic user = userServiceClient.getUserDetails(userId);
+
+                if (user == null) {
+                    log.warn("User not found with ID: {}", userId);
+                    continue;
+                }
+
+                String subject = String.format("Support Engineer Assigned to Incident #%d",
+                        event.getIncidentId());
+                String message = buildSupportEngineerAssignedMessage(event, user.getName(), userId);
+
+                notificationSender.send(
+                        user.getEmail(),
+                        subject,
+                        message
+                );
+
+                log.info("Sent support engineer assignment notification to user: {} ({})",
+                        user.getName(), user.getEmail());
+
+            } catch (Exception e) {
+                log.error("Failed to notify user ID: {} about support engineer assignment", userId, e);
+            }
+        }
+    }
+
+    private String buildSupportEngineerAssignedMessage(
+            SupportEngineerAssignedEvent event,
+            String recipientName,
+            Long recipientId
+    ) {
+        StringBuilder message = new StringBuilder();
+        message.append(String.format("Hello %s,\n\n", recipientName));
+
+        // Check if the recipient is the support engineer themselves
+        boolean isSupportEngineer = recipientId.equals(event.getSupportEngineerId());
+
+        if (isSupportEngineer) {
+            message.append(String.format("You have been assigned to Incident #%d.\n\n",
+                    event.getIncidentId()));
+        } else {
+            message.append(String.format("A support engineer has been assigned to Incident #%d.\n\n",
+                    event.getIncidentId()));
+        }
+
+        message.append("Incident Details:\n");
+        message.append(String.format("Title: %s\n", event.getTitle()));
+        message.append(String.format("Service: %s\n", event.getServiceName()));
+        message.append(String.format("Priority: %s\n", event.getPriority()));
+
+        if (event.getPreviousStatus() != null) {
+            message.append(String.format("Previous Status: %s\n", event.getPreviousStatus()));
+        }
+
+        message.append(String.format("Current Status: %s\n", event.getNewStatus()));
+        message.append(String.format("Assigned At: %s\n\n", event.getAssignedAt()));
+
+        message.append("Support Engineer Details:\n");
+        message.append(String.format("Name: %s\n", event.getSupportEngineerName()));
+        message.append(String.format("Employee ID: %s\n\n", event.getSupportEngineerEmployeeId()));
+
+        // Add role-specific messages
+        if (isSupportEngineer) {
+            message.append("Action Required:\n");
+            message.append("• Review the incident details in your dashboard\n");
+            message.append("• Update the status as you make progress\n");
+            message.append("• Contact the reporter if you need additional information\n");
+            message.append("• Aim to resolve this incident according to the SLA guidelines\n");
+        } else {
+            message.append("The support engineer will begin working on this incident shortly.\n");
+            message.append("You will receive updates as the incident progresses.\n");
+            message.append("\nIf you have any questions, please contact the support team.\n");
+        }
+
+        message.append("\nRegards,\n");
+        message.append("TrackIt System");
+
+        return message.toString();
     }
 
     private String buildIncidentCreatedMessage(IncidentCreatedEvent event, String name) {
