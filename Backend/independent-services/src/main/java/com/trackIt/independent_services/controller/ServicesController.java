@@ -59,7 +59,7 @@ public class ServicesController {
         );
     }
 
-    @GetMapping("public")
+    @GetMapping("/public")
     public ResponseEntity<ApiResponse<List<ServicesResponsePublic>>> getAllPublic() {
         log.info("REST received to list all services");
 
@@ -111,7 +111,7 @@ public class ServicesController {
         );
     }
 
-    @GetMapping("validate/{id}")
+    @GetMapping("/validate/{id}")
     public ResponseEntity<Boolean> validateService(@PathVariable Long id) {
         log.info("REST received to validate service with id: {}", id);
         boolean validation = servicesService.validateService(id);

@@ -1,4 +1,4 @@
-package com.trackIt.incident_service.dto;
+package com.trackIt.incident_service.dto.kafka;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -8,20 +8,19 @@ import lombok.NoArgsConstructor;
 import java.util.List;
 
 @Data
-@Builder
-@NoArgsConstructor
 @AllArgsConstructor
-public class SupportEngineerAssignedEvent {
+@NoArgsConstructor
+@Builder
+public class IncidentStatusChangedEvent {
+
     private String eventType;
     private Long incidentId;
     private String title;
     private String serviceName;
     private String priority;
-    private Long supportEngineerId;
-    private String supportEngineerName;
-    private String supportEngineerEmployeeId;
     private String previousStatus;
     private String newStatus;
-    private List<Long> notifyUserIds; // Reporter, Provider Manager, Support Engineer
-    private String assignedAt;
+    private List<Long> notifyUserIds;
+    private String updatedAt;
+    private String resolvedAt;
 }

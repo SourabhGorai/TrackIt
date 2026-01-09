@@ -1,9 +1,7 @@
 package com.trackIt.notification_service.consumer;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.trackIt.notification_service.dto.IncidentCreatedEvent;
-import com.trackIt.notification_service.dto.IncidentStatusChangedEvent;
-import com.trackIt.notification_service.dto.SupportEngineerAssignedEvent;
+import com.trackIt.notification_service.dto.*;
 import com.trackIt.notification_service.service.NotificationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -28,12 +26,17 @@ public class IncidentEventConsumer {
 
         try {
             String eventType = (String) eventMap.get("eventType");
-            log.info("Received event: type={}, data={}", eventType, eventMap);
+            log.info("Received event: type={}, incidentId={}",
+                    eventType, eventMap.get("incidentId"));
 
             switch (eventType) {
                 case "INCIDENT_CREATED" -> handleIncidentCreated(eventMap);
                 case "INCIDENT_STATUS_CHANGED" -> handleStatusChanged(eventMap);
                 case "SUPPORT_ENGINEER_ASSIGNED" -> handleSupportEngineerAssigned(eventMap);
+                case "SLA_RESPONSE_WARNING" -> handleSlaWarning(eventMap);
+                case "SLA_RESOLUTION_WARNING" -> handleSlaWarning(eventMap);
+                case "SLA_RESPONSE_BREACH" -> handleSlaBreach(eventMap);
+                case "SLA_RESOLUTION_BREACH" -> handleSlaBreach(eventMap);
                 default -> log.warn("Unknown event type: {}", eventType);
             }
 
@@ -90,6 +93,44 @@ public class IncidentEventConsumer {
 
         } catch (Exception e) {
             log.error("Error handling SUPPORT_ENGINEER_ASSIGNED event", e);
+        }
+    }
+
+    private void handleSlaWarning(Map<String, Object> eventMap) {
+        try {
+            SlaWarningEvent event = objectMapper.convertValue(
+                    eventMap,
+                    SlaWarningEvent.class
+            );
+
+            log.info("Processing {} for incidentId={}, {} minutes remaining",
+                    event.getEventType(),
+                    event.getIncidentId(),
+                    event.getMinutesRemaining());
+
+            notificationService.notifySlaWarning(event);
+
+        } catch (Exception e) {
+            log.error("Error handling SLA_WARNING event", e);
+        }
+    }
+
+    private void handleSlaBreach(Map<String, Object> eventMap) {
+        try {
+            SlaBreachEvent event = objectMapper.convertValue(
+                    eventMap,
+                    SlaBreachEvent.class
+            );
+
+            log.info("Processing {} for incidentId={}, {} minutes overdue",
+                    event.getEventType(),
+                    event.getIncidentId(),
+                    event.getMinutesOverdue());
+
+            notificationService.notifySlaBreach(event);
+
+        } catch (Exception e) {
+            log.error("Error handling SLA_BREACH event", e);
         }
     }
 }

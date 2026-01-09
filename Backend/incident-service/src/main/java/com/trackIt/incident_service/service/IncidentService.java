@@ -40,6 +40,7 @@ public class IncidentService {
     private final UserServiceClient userServiceClient;
     private final SlaServiceClient slaServiceClient;
     private final IncidentEventPublisher incidentEventPublisher;
+    private final IncidentSlaService incidentSlaService;
 
     @Transactional
     public IncidentResponse createIncident(Long userId, ReporterRequest incident) {
@@ -116,7 +117,12 @@ public class IncidentService {
 
             log.info("Incident saved successfully with ID: {}", saved.getIncidentId());
 
-            return IncidentMapper.toResponse(saved, reporterName, priority, null);
+            IncidentResponse response = IncidentMapper.toResponse
+                    (saved, reporterName, priority, null);
+
+            incidentSlaService.createIncidentSla(saved);
+
+            return response;
 
         } catch (Exception e) {
             log.error("Failed to save incident", e);
@@ -247,6 +253,8 @@ public class IncidentService {
                 }
         );
 
+        incidentSlaService.setResponseTime(saved);
+
         log.info("Successfully assigned support engineer {} to incident {}",
                 assigned.getName(), saved.getIncidentId());
 
@@ -257,154 +265,6 @@ public class IncidentService {
                 assigned.getName()
         );
     }
-
-//    @Transactional
-//    public IncidentResponse assignSupportEngineer(AssignSupportEngineerRequest req) {
-//
-//        log.info("Assign support engineer request received for ID: {}", req.getIncidentId());
-//
-//        Incident incident = incidentRepository.findById(req.getIncidentId())
-//                .orElseThrow(() ->
-//                        new NotFoundException("Incident", req.getIncidentId().toString())
-//                );
-//
-//        UserResponsePublic reporter = Optional
-//                .ofNullable(userServiceClient.getUserDetails(incident.getReportedBy()))
-//                .orElseThrow(() -> new ServiceException("Reporter not found"));
-//
-//        PriorityResponse priority = Optional
-//                .ofNullable(independentServiceClient.validatePriority(incident.getPriorityId()))
-//                .orElseThrow(() -> new ServiceException("Invalid priority"));
-//
-//        if (incident.getAssignedTo() != null) {
-//
-//            UserResponsePublic assigned = Optional
-//                    .ofNullable(userServiceClient.getUserDetails(incident.getAssignedTo()))
-//                    .orElseThrow(() -> new ServiceException("Assigned user not found"));
-//
-//            log.info("Already assigned | EmpID: {} | Name: {} | Status: {}",
-//                    assigned.getEmployeeId(),
-//                    assigned.getName(),
-//                    incident.getStatus());
-//
-//            return IncidentMapper.toResponse(
-//                    incident,
-//                    reporter.getName(),
-//                    priority.getPriorityLevel(),
-//                    assigned.getName()
-//            );
-//        }
-//
-//        UserResponsePublic assigned = Optional
-//                .ofNullable(userServiceClient.getUserDetailsByEmployeeId(req.getAssignedTo()))
-//                .orElseThrow(() ->
-//                        new UserNotFoundException(
-//                                "User not found with employee ID: " + req.getAssignedTo()
-//                        )
-//                );
-//
-//        ServicesResponse service = Optional
-//                .ofNullable(independentServiceClient.validateService(incident.getServiceId()))
-//                .orElseThrow(() ->
-//                        new ServiceException(String.format("Service not found Id: %s",
-//                                incident.getServiceId().toString()))
-//                );
-//
-//        if (!service.getProviderCompanyId().equals(assigned.getCompanyId())) {
-//            throw new ServiceException(String.format(
-//                    "Employee Id: %s, is not of the provider company.",
-//                    req.getAssignedTo()
-//            ));
-//        }
-//
-//        RoleResponse role = Optional
-//                .ofNullable(independentServiceClient.validateRole(assigned.getRoleId()))
-//                .orElseThrow(() -> new ServiceException("Unable to validate role"));
-//
-//        if (!"SUPPORT_ENGINEER".equals(role.getRole())) {
-//            throw new ServiceException("User is not a support engineer");
-//        }
-//
-//        incident.setAssignedTo(assigned.getId());
-//        incident.setStatus(Status.IN_PROGRESS);
-//
-//        Incident saved = incidentRepository.save(incident);
-//
-//        return IncidentMapper.toResponse(
-//                saved,
-//                reporter.getName(),
-//                priority.getPriorityLevel(),
-//                assigned.getName()
-//        );
-//    }
-
-
-//    @Transactional
-//    public IncidentResponse changeStatus(SupporterRequest req) {
-//
-//        Long id = req.getIncidentId();
-//        Status status = req.getStatus();
-//
-//        log.info("Request received to change status of incident ID: {}", id);
-//
-//        Optional<Incident> incidentOpt = incidentRepository.findById(id);
-//
-//        if (incidentOpt.isEmpty()) {
-//            throw new ServiceException(String.format(
-//                    "Incident record does not exists with ID: %s", id.toString()));
-//        }
-//
-//        try {
-//            Incident incident = incidentOpt.get();
-//
-//            UserResponsePublic reporter = Optional
-//                    .ofNullable(userServiceClient.getUserDetails(incident.getReportedBy()))
-//                    .orElseThrow(() -> new ServiceException("Reporter not found"));
-//
-//            PriorityResponse priority = Optional
-//                    .ofNullable(independentServiceClient.validatePriority(incident.getPriorityId()))
-//                    .orElseThrow(() -> new ServiceException("Invalid priority"));
-//
-//            UserResponsePublic assigned = Optional
-//                    .ofNullable(userServiceClient.getUserDetails(incident.getAssignedTo()))
-//                    .orElseThrow(() -> new ServiceException("Assigned user not found"));
-//
-//            if (incident.getStatus() != null && incident.getStatus() == status) {
-//                log.info("Status already set to: {}", status);
-//                return IncidentMapper.toResponse(
-//                        incident,
-//                        reporter.getName(),
-//                        priority.getPriorityLevel(),
-//                        assigned.getName()
-//                );
-//            }
-//
-//            incident.setStatus(status);
-//
-//            Incident saved = incidentRepository.save(incident);
-//
-//            if (status == Status.RESOLVED) {
-//                incident.setResolvedAt(LocalDateTime.now());
-//                // Kafka will send notification to reporter, provider_manager and support engineer
-//                // that the issue is resolved.
-//            } else if (status == Status.OPEN) {
-//                // send notification to the reporter
-//            } else if (status == Status.IN_PROGRESS || status == Status.ON_HOLD || status == Status.CLOSED) {
-//                //send notification to reporter, provider_manager, assignedTo
-//            }
-//
-//            return IncidentMapper.toResponse(
-//                    saved,
-//                    reporter.getName(),
-//                    priority.getPriorityLevel(),
-//                    assigned.getName()
-//            );
-//
-//        } catch (Exception e) {
-//            log.info("Failed to Update Status of incident with ID: {}", id);
-//            throw new ServiceException("Failed to Update Status", e);
-//        }
-//    }
 
     @Transactional
     public IncidentResponse changeStatus(SupporterRequest req, Long userId, String role) {
@@ -471,6 +331,7 @@ public class IncidentService {
 
             if (status == Status.RESOLVED) {
                 incident.setResolvedAt(LocalDateTime.now());
+                incidentSlaService.setRespondTime(incident);
             }
 
             Incident saved = incidentRepository.save(incident);

@@ -14,6 +14,8 @@ import org.springframework.cglib.core.Local;
 
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Data
 @AllArgsConstructor
@@ -59,5 +61,13 @@ public class Incident {
 
     @UpdateTimestamp
     private LocalDateTime updatedAt;
+
+    @OneToMany(
+            mappedBy = "incident",
+            cascade = CascadeType.ALL,
+            orphanRemoval = true
+    )
+    private List<Comments> comments = new ArrayList<>();
+
 
 }

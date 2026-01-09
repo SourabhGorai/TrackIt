@@ -1,9 +1,7 @@
-package com.trackIt.incident_service.dto;
+package com.trackIt.incident_service.dto.kafka;
 
 import lombok.Builder;
 import lombok.Data;
-
-import java.time.LocalDateTime;
 
 @Data
 @Builder
