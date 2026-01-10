@@ -9,86 +9,23 @@ spring:
 
   cloud:
     gateway:
-      server:
-        webflux:
+      # ================= CORS =================
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowedOriginPatterns: "*"
+            allowedMethods: "*"
+            allowedHeaders: "*"
+            exposedHeaders:
+              - Authorization
+            allowCredentials: true
+            maxAge: 3600
 
-          # ================= ROUTES =================
-          routes:
-
-            # ---------- USER SERVICE (PUBLIC) ----------
-            - id: user-service-auth
-              uri: lb://USER-SERVICE2
-              predicates:
-                - Path=/api/auth/**
-
-            # ---------- USER SERVICE (PROTECTED) ----------
-            - id: auth-register-protected
-              uri: lb://USER-SERVICE2
-              predicates:
-                - Path=/api/auth/register
-              filters:
-                - AuthenticationFilter
-
-            - id: user-service-users
-              uri: lb://USER-SERVICE2
-              predicates:
-                - Path=/api/users/**
-              filters:
-                - AuthenticationFilter
-
-            # ---------- INDEPENDENT SERVICES (PUBLIC) ----------
-            - id: public-companies
-              uri: lb://INDEPENDENT-SERVICES
-              predicates:
-                - Path=/api/companies/active
-
-            - id: public-roles
-              uri: lb://INDEPENDENT-SERVICES
-              predicates:
-                - Path=/api/roles
-
-            # ---------- INDEPENDENT SERVICES (PROTECTED) ----------
-            - id: independent-services-protected
-              uri: lb://INDEPENDENT-SERVICES
-              predicates:
-                - Path=/api/companies/**,/api/priority/**,/api/services/**,/api/roles/**
-              filters:
-                - AuthenticationFilter
-
-            # ---------- SLA SERVICE (PROTECTED) ------------
-            - id: sla-service-protected
-              uri: lb://SLA-SERVICE
-              predicates:
-                - Path=/api/sla/**
-              filters:
-                - AuthenticationFilter
-
-            # ---------- INCIDENT SERVICE (PROTECTED) ------------
-            - id: incident-service-protected
-              uri: lb://INCIDENT-SERVICE
-              predicates:
-                - Path=/api/incidents/**
-              filters:
-                - AuthenticationFilter
-
-
-          # ================= CORS =================
-          globalcors:
-            cors-configurations:
-              '[/**]':
-                allowedOriginPatterns: "*"
-                allowedMethods: "*"
-                allowedHeaders: "*"
-                exposedHeaders:
-                  - Authorization
-                allowCredentials: true
-                maxAge: 3600
-
-          # ================= DISCOVERY =================
-          discovery:
-            locator:
-              enabled: true
-              lower-case-service-id: true
+      # ================= DISCOVERY =================
+      discovery:
+        locator:
+          enabled: true
+          lower-case-service-id: true
 
 server:
   port: 8080
