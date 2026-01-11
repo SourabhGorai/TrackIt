@@ -1,13 +1,12 @@
 package com.trackIt.incident_service.service;
 
-import com.trackIt.incident_service.client.IndependentServiceClient;
+import com.trackIt.incident_service.client.ScheduledTaskServiceClient;
 import com.trackIt.incident_service.client.SlaServiceClient;
 import com.trackIt.incident_service.dto.response.IncidentSlaResponse;
 import com.trackIt.incident_service.dto.response.PromiseResponse;
 import com.trackIt.incident_service.dto.response.PriorityResponse;
 import com.trackIt.incident_service.dto.response.ServicesResponse;
 import com.trackIt.incident_service.exception.ServiceException;
-import com.trackIt.incident_service.mapper.IncidentMapper;
 import com.trackIt.incident_service.mapper.IncidentSlaMapper;
 import com.trackIt.incident_service.model.Incident;
 import com.trackIt.incident_service.model.IncidentSla;
@@ -22,7 +21,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
 import java.util.List;
 
 @Slf4j
@@ -33,8 +31,7 @@ public class IncidentSlaService {
     private final IncidentSlaRepository incidentSlaRepository;
     private final SlaServiceClient slaServiceClient;
     private final IncidentEventPublisher incidentEventPublisher;
-    private final IndependentServiceClient independentServiceClient;
-//    private final IncidentSlaMapper incidentSlaMapper;
+    private final ScheduledTaskServiceClient scheduledTaskServiceClient;
 
     private static final int WARNING_MINUTES = 10;
 
@@ -179,9 +176,15 @@ public class IncidentSlaService {
 
                 long minutesRemaining = ChronoUnit.MINUTES.between(now, sla.getResponseDeadline());
 
-                // Fetch service and priority details
-                ServicesResponse service = independentServiceClient.validateService(incident.getServiceId());
-                PriorityResponse priority = independentServiceClient.validatePriority(incident.getPriorityId());
+                // Use scheduled task client instead of regular client
+                ServicesResponse service = scheduledTaskServiceClient.validateService(incident.getServiceId());
+                PriorityResponse priority = scheduledTaskServiceClient.validatePriority(incident.getPriorityId());
+
+                if (service == null || priority == null) {
+                    log.warn("Failed to fetch service or priority data for incident {}, skipping warning",
+                            incident.getIncidentId());
+                    continue;
+                }
 
                 // Determine who to notify based on assignment status
                 Long reporterId = incident.getReportedBy();
@@ -231,9 +234,15 @@ public class IncidentSlaService {
 
                 long minutesRemaining = ChronoUnit.MINUTES.between(now, sla.getResolutionDeadline());
 
-                // Fetch service and priority details
-                ServicesResponse service = independentServiceClient.validateService(incident.getServiceId());
-                PriorityResponse priority = independentServiceClient.validatePriority(incident.getPriorityId());
+                // Use scheduled task client
+                ServicesResponse service = scheduledTaskServiceClient.validateService(incident.getServiceId());
+                PriorityResponse priority = scheduledTaskServiceClient.validatePriority(incident.getPriorityId());
+
+                if (service == null || priority == null) {
+                    log.warn("Failed to fetch service or priority data for incident {}, skipping warning",
+                            incident.getIncidentId());
+                    continue;
+                }
 
                 // Determine who to notify based on assignment status
                 Long reporterId = incident.getReportedBy();
@@ -282,9 +291,15 @@ public class IncidentSlaService {
 
                 long minutesOverdue = ChronoUnit.MINUTES.between(sla.getResponseDeadline(), now);
 
-                // Fetch service and priority details
-                ServicesResponse service = independentServiceClient.validateService(incident.getServiceId());
-                PriorityResponse priority = independentServiceClient.validatePriority(incident.getPriorityId());
+                // Use scheduled task client
+                ServicesResponse service = scheduledTaskServiceClient.validateService(incident.getServiceId());
+                PriorityResponse priority = scheduledTaskServiceClient.validatePriority(incident.getPriorityId());
+
+                if (service == null || priority == null) {
+                    log.warn("Failed to fetch service or priority data for incident {}, skipping breach",
+                            incident.getIncidentId());
+                    continue;
+                }
 
                 // Determine who to notify based on assignment status
                 Long reporterId = incident.getReportedBy();
@@ -334,9 +349,15 @@ public class IncidentSlaService {
 
                 long minutesOverdue = ChronoUnit.MINUTES.between(sla.getResolutionDeadline(), now);
 
-                // Fetch service and priority details
-                ServicesResponse service = independentServiceClient.validateService(incident.getServiceId());
-                PriorityResponse priority = independentServiceClient.validatePriority(incident.getPriorityId());
+                // Use scheduled task client
+                ServicesResponse service = scheduledTaskServiceClient.validateService(incident.getServiceId());
+                PriorityResponse priority = scheduledTaskServiceClient.validatePriority(incident.getPriorityId());
+
+                if (service == null || priority == null) {
+                    log.warn("Failed to fetch service or priority data for incident {}, skipping breach",
+                            incident.getIncidentId());
+                    continue;
+                }
 
                 // Determine who to notify based on assignment status
                 Long reporterId = incident.getReportedBy();

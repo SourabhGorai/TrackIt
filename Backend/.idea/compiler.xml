@@ -11,18 +11,6 @@
         <module name="user-service2" />
         <module name="user-service" />
       </profile>
-      <profile name="Annotation profile for notification-service" enabled="true">
-        <sourceOutputDir name="target/generated-sources/annotations" />
-        <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
-        <outputRelativeToContentRoot value="true" />
-        <processorPath useClasspath="false">
-          <entry name="$MAVEN_REPOSITORY$/org/projectlombok/lombok/1.18.42/lombok-1.18.42.jar" />
-        </processorPath>
-        <module name="api-gateway" />
-        <module name="independent-services" />
-        <module name="notification-service" />
-        <module name="sla-service" />
-      </profile>
       <profile name="Annotation profile for incidents" enabled="true">
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
@@ -32,8 +20,21 @@
         </processorPath>
         <module name="incident-service" />
       </profile>
+      <profile name="Annotation profile for sla-service" enabled="true">
+        <sourceOutputDir name="target/generated-sources/annotations" />
+        <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
+        <outputRelativeToContentRoot value="true" />
+        <processorPath useClasspath="false">
+          <entry name="$MAVEN_REPOSITORY$/org/projectlombok/lombok/1.18.42/lombok-1.18.42.jar" />
+        </processorPath>
+        <module name="api-gateway" />
+        <module name="independent-services" />
+        <module name="sla-service" />
+        <module name="notification-service" />
+      </profile>
     </annotationProcessing>
     <bytecodeTargetLevel>
+      <module name="email-service" target="17" />
       <module name="incidents" target="17" />
       <module name="incidents2" target="17" />
     </bytecodeTargetLevel>

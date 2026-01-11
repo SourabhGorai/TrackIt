@@ -58,6 +58,7 @@ eureka:
 app:
   jwt:
     secret: ${JWT_SECRET}
+  internal-token: ${INTERNAL_TOKEN:notification-service-secret}
   independent-service:
     url: http://INDEPENDENT-SERVICES/api
   sla-service:

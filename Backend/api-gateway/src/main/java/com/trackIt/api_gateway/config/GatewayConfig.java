@@ -42,6 +42,13 @@ public class GatewayConfig {
                                 new InternalServiceAuthFilter.Config())))
                         .uri("lb://USER-SERVICE2"))
 
+                .route("internal-independent-service-validation", r -> r
+                        .path("/api/services/**", "/api/priority/**", "/api/roles/validate/**", "/api/companies/validate/**")
+                        .and().header("X-Internal-Service")
+                        .filters(f -> f.filter(internalServiceAuthFilter.apply(
+                                new InternalServiceAuthFilter.Config())))
+                        .uri("lb://INDEPENDENT-SERVICES"))
+
                 // ================================================================================
                 //                          USER SERVICE ROUTES
                 // ================================================================================
